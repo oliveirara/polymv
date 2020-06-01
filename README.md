@@ -2,7 +2,7 @@
 
 `polyMV` is a _Python_ package that converts multipolar coefficients (`alms` in `healpix` order) into Multipole Vectors (MVs) and also Fréchet Vectors (FVs) given a specific multipole.
 
-Any publications making use of `polyMV` should cite this paper: R. A. Oliveira, T. S. Pereira, and M. Quartin, **CMB statistical isotropy confirmation at all scales using multipole vectors**, [Phys. Dark Univ. 29 (2020) 100608](https://doi.org/10.1016/j.dark.2020.100608) ([arXiv:1812.02654 [astro-ph.CO]](https://arxiv.org/abs/1812.02654)).
+Any publications making use of `polyMV` should cite this paper: R. A. Oliveira, T. S. Pereira, and M. Quartin, **CMB statistical isotropy confirmation at all scales using multipole vectors**, [Phys. Dark Univ. 30 (2020) 100608](https://doi.org/10.1016/j.dark.2020.100608) ([arXiv:1812.02654 [astro-ph.CO]](https://arxiv.org/abs/1812.02654)).
 
 Checkout MVs and FVs from Planck 2015 and 2018 temperature maps in [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3866410.svg)](https://doi.org/10.5281/zenodo.3866410).
 
