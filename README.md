@@ -64,7 +64,6 @@ Checkout MVs and FVs from Planck 2015 and 2018 temperature maps in [![DOI](https
 
     ```python
     _mps = ctypes.CDLL("libmps.so.3") -> _mps = ctypes.CDLL("<path-to-installation-folder>/MPSolve/lib/libmps.3.dylib")
-    
     ```
 
     - on Linux:
