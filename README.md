@@ -61,11 +61,12 @@ Checkout MVs and FVs from Planck 2015 and 2018 temperature maps in [![DOI](https
 2. Inside `src` folder, open `mpsolve.py` and replace the path for "libmps.so.3" on line 7:
 
     - on macOS:
+
     ```python
     _mps = ctypes.CDLL("libmps.so.3") -> _mps = ctypes.CDLL("<path-to-installation-folder>/MPSolve/lib/libmps.3.dylib")
     
     ```
-    
+
     - on Linux:
     ```python
     _mps = ctypes.CDLL("libmps.so.3") -> _mps = ctypes.CDLL("<path-to-installation-folder>/MPSolve/lib/libmps.so.3")
