@@ -104,3 +104,7 @@ You also can add the flag `--user` to install locally.
 ## Notebooks:
 
 In `notebooks` folder you will find some examples of how to use `polyMV`.
+
+- - -
+
+This work was funded by Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq), Coordenação de Aperfeiçoamento de Pessoal de Nível Superior (CAPES) and Fundação Araucária (PBA-2016).
