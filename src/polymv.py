@@ -117,6 +117,24 @@ class otherfuncs:
         return alms[np.where(ells == l)]
 
     @staticmethod
+    def get_mvs_from_many(mvs, lin, lout, l):
+        """
+        Get specific multiple vectors given a list of many (output from many_m_vectors).
+    
+        Args:
+            mvs (float array): array containing multipole vectors [theta, phi].
+            lin (int): initial multipole.
+            lout (int): final multipole.
+            l (int): multipole.
+    
+        Returns:
+            Float array.
+        """
+        multipoles = np.arange(lin, lout + 1, 1, dtype="int")
+        indexes = np.repeat(multipoles, 2*multipoles)
+        return mvs[np.where(indexes==l)]
+
+    @staticmethod
     def to_cart(theta_phi_array):
         """
         Convert spherical to Cartesian coordinate. This function works only for a single multipole or stacked arrays, e.g. 2 and 3 MVs together.
@@ -192,21 +210,23 @@ class otherfuncs:
             raise ValueError("Found a bug!")
 
     @staticmethod
-    def many_mvs_north(mvs):
+    def many_mvs_north(mvs, lin, lout):
         """
         Get multipole vectors on north hemisphere for multiples multipoles.
-
+    
         Args:
             mvs (float array): array containing multipole vectors [theta, phi].
-
+            lin (int): initial multipole.
+            lout (int): final multipole.
+    
         Returns:
             Float array [theta, phi] in radians.
         """
         mvs_north_full = []
-        for i in range(len(mvs)):
-            mvs_ell = mvs[i]
+        for i in range(lin, lout + 1):
+            mvs_ell = otherfuncs.get_mvs_from_many(mvs, lin, lout, i)
             mvs_north_full.append(otherfuncs.mvs_north(mvs_ell))
-        return mvs_north_full
+        return np.vstack(mvs_north_full)
 
 
 @jit(nopython=True)
