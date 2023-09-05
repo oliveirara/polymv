@@ -97,7 +97,7 @@ class mvs:
         pool.close()
         pool.join()
 
-        return np.array(res)
+        return np.vstack(res)
 
 
 class otherfuncs:
