@@ -6,11 +6,15 @@
 #include <mps/mps.h>
 #include <nlopt.h>
 #include <complex.h>
-#include <time.h>
-#define o 1127251
-#define als_numero 1 /* Numero de als gerados */
-#define lmax 1500
-#define NPIX 196608 /* NSIDE = 128 */
+#include <omp.h>
+
+#define LMAX 2000
+#define ALS_NUMERO_TOTAL 200
+//char FILE_ALMS[300] = "/home/hdd5/ricardogonzatto/GSI_maps_nomask/boost_maps_rmv_scale_factor/alms_lmax2000_boost_001.dat";
+
+
+#define ALMS_NUMERO_LINHAS ((LMAX+1) * (LMAX+2))/2
+#define MVS_NUMERO (LMAX * (LMAX+1)) - 2 
 
 /* Função para calcular os coeficientes */
 void
@@ -34,11 +38,11 @@ coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coe
   mpf_mul (coef_real[l], raiz_binom, al_real[l]); /* Multiplicando o al pela raiz do binom */
   mpf_mul (coef_imag[l], raiz_binom, al_imag[l]);
 
-
+ 
   for (int m = 1; m <= l; m++)
   {
-    index = ((m * ((2 * lmax) + 1 - m)) / 2) + l; /*calculando a posição dos alms */
-
+    index = ((m * ((2 * LMAX) + 1 - m)) / 2) + l; /*calculando a posição dos alms */
+//    printf("index = %d , m = %d, l = %d, lmax =%d\n", index, m, l, lmax);
     mpf_inits (coef_real[l - m], coef_imag[l - m], coef_real[l + m], coef_imag[l + m], NULL);
 
     mpz_bin_uiui (int_binom, (2 * l), (m + l)); /* Calculando o binômio */
@@ -52,11 +56,11 @@ coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coe
     mpf_mul (coef_imag[l - m], raiz_binom, al_imag[index]);
     mpf_set_si (coef_negativ, pow (-1, m) * (-1));
     mpf_mul (coef_imag[l - m], coef_imag[l - m], coef_negativ);
-
+   
     mpf_mul (coef_real[l + m], raiz_binom, al_real[index]);
     mpf_mul (coef_imag[l + m], raiz_binom, al_imag[index]);
   }
-
+ 	
   mpz_clears (int_binom, NULL);
   mpf_clears (float_binom, raiz_binom, NULL);
 }
@@ -80,11 +84,12 @@ raizes_pol (int l, mpf_t coef_real[], mpf_t coef_imag[], double *raiz_real, doub
   s = mps_context_new ();
   p = mps_monomial_poly_new (s, 2 * l);
   mps_context_select_algorithm (s, MPS_ALGORITHM_SECULAR_GA);
+//  mps_thread_pool_set_concurrency_limit (s, NULL, 1);    //tentando controlar as threads
 
   for (int i = 0; i < ((2 * l) + 1); i++)
   {
-    mps_monomial_poly_set_coefficient_q (s, p, i, rat_coef_real[i], rat_coef_imag[i]); 
-                                                                                       
+    mps_monomial_poly_set_coefficient_q (s, p, i, rat_coef_real[i], rat_coef_imag[i]); /* o primeiro número é a ordem do coeficiente */
+                                                                                       /* o segundo o coeficiente real                                                                        // o terceiro o coeficiente imaginário */
   }
 
   mps_context_set_input_poly (s, MPS_POLYNOMIAL (p));
@@ -108,6 +113,7 @@ raizes_pol (int l, mpf_t coef_real[], mpf_t coef_imag[], double *raiz_real, doub
   mps_polynomial_free (s, MPS_POLYNOMIAL (p));
   mps_context_free (s);
   cplx_vfree (results);
+
 }
 
 /* Função para encontrar as coordenadas dos vetores multipolares */
@@ -122,7 +128,7 @@ coord_pol (int l, double raiz_real[], double raiz_imag[], double *theta, double 
   {
     z[i]     = raiz_real[i] + (raiz_imag[i] * I);
     R[i]     = cabs (z[i]);
-    phi[i]   = carg (z[i]); /* Theta domain is (0, pi)        Phi domain is (0, 2*pi)  */
+    phi[i]   = carg (z[i]); /* Theta domain is (0, pi)        Phi domain is (0, 2*pi)  // irei retirar um pi pois o renan não está somando essa fase no polymv */
     theta[i] = 2 * atan (1 / R[i]);
   }
 }
@@ -136,6 +142,9 @@ eta_phi_pol (int l, double theta[], double phi[], double *eta, double *varphi)
     varphi[i] = phi[i] / (2 * M_PI);
   }
 }
+
+
+
 
 typedef struct _FrechetData
 {
@@ -198,82 +207,9 @@ frechet_pol_min (unsigned n, const double *x, double *grad, void *my_func_data)
   return fechet_mean;
 }
 
-/*Função para encontrar as coordenadas dos vetores de Fréchet */
-void
-frechet_pol (int l, double * restrict theta, double * restrict phi, double * restrict theta_esfera, double * restrict phi_esfera, 
-             double * restrict x_esfera, double * restrict y_esfera, double * restrict z_esfera,
-             double *frechet_vec_theta, double *frechet_vec_phi)
-{
-  FILE *psi = fopen ("psis(l=1500).dat", "a");
-//  double frechet_vec_theta;
-//  double frechet_vec_phi;
-  const int twol = 2 * l;
-  double x[2 * l], y[2 * l], z[2 * l];
-  double f, fechet_mean;
-  
-
-  for (int i = 0; i < twol; i++)
-  {
-    x[i] = sin (theta[i]) * cos (phi[i]);
-    y[i] = sin (theta[i]) * sin (phi[i]);
-    z[i] = cos (theta[i]);
-  }
-
-  f = 0.0;
-  for (int j = 0; j < twol; j++)
-  {
-    const double ab      = (x[j] * x_esfera[0]) + (y[j] * y_esfera[0]) + (z[j] * z_esfera[0]);
-    const double acos_ab = ACOS (ab);
-    f += acos_ab * acos_ab;
-  }
-
-  fprintf (psi, "%f %f %f\n", f, theta_esfera[0], phi_esfera[0]);
-  *frechet_vec_theta = theta_esfera[0];
-  *frechet_vec_phi   = phi_esfera[0];
-
-  for (int i = 1; i < NPIX; i++)
-  {
-    fechet_mean = 0.0;
-
-    for (int j = 0; j < twol; j++)
-    {
-      const double ab      = (x[j] * x_esfera[i]) + (y[j] * y_esfera[i]) + (z[j] * z_esfera[i]);
-      const double acos_ab = ACOS (ab);
-      fechet_mean += acos_ab * acos_ab;
-      
-    }
-
-    fprintf (psi, "%f %f %f\n", fechet_mean, theta_esfera[i], phi_esfera[i]);
-
-    if (f > fechet_mean)
-    {
-      f                  = fechet_mean;
-      *frechet_vec_theta = theta_esfera[i];
-      *frechet_vec_phi   = phi_esfera[i];
-    }
-  }
-
-  if (*frechet_vec_theta > (M_PI / 2))
-  {
-    *frechet_vec_theta = M_PI - *frechet_vec_theta;
-    *frechet_vec_phi   = M_PI + *frechet_vec_phi;
-
-    if (*frechet_vec_phi > (2 * M_PI))
-      *frechet_vec_phi = *frechet_vec_phi - (2 * M_PI);
-  }
-
-  fclose (psi);
-
-//  printf ("M1 % 22.15g % 22.15g % 22.15g\n", *frechet_vec_theta, *frechet_vec_phi, f);
-
-
-//    *frechet_vec_eta = 1-cos(frechet_vec_theta); 
-//    *frechet_vec_varphi = frechet_vec_phi/(2*M_PI); 
-}
-
 
 void
-frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *frechet_vec_theta, double *frechet_vec_phi)
+frechet_pol (int l, double * restrict theta, double * restrict phi, double *frechet_vec_theta, double *frechet_vec_phi)
 {
 //  double frechet_vec_theta;
 //  double frechet_vec_phi;
@@ -359,132 +295,149 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
 }
 
 
+
 void
-multipol_vec (mpf_t al_real[], mpf_t al_imag[])
+multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
 {
-/*
-  double theta_esfera[NPIX], phi_esfera[NPIX], x_esfera[NPIX], y_esfera[NPIX], z_esfera[NPIX];
 
   {
-    FILE *theta_phi = fopen ("ThetaPhi(NSiDE128).dat", "r");
+    static  double mvs_theta[MVS_NUMERO];
+    static double mvs_phi[MVS_NUMERO];
 
-    for (int i = 0; i < NPIX; i++)
-    {
-      fscanf (theta_phi, "%lf %lf\n", &theta_esfera[i], &phi_esfera[i]);
-    }
+    char filename[400];
+    sprintf(filename,"mvs_fullsky_smica_noise_%d_.dat", i);
 
-    fclose (theta_phi);
-  }
-
-  {
-    FILE *x_y_z = fopen ("x_y_z(NSIDE128).dat", "r");
-
-    for (int i = 0; i < NPIX; i++)
-    {
-      fscanf (x_y_z, "%lf %lf %lf\n", &x_esfera[i], &y_esfera[i], &z_esfera[i]);
-      //printf ("TESTE: (%f %f %f) %f\n", x_esfera[i], y_esfera[i], z_esfera[i], sqrt (z_esfera[i]*z_esfera[i] + x_esfera[i]*x_esfera[i] + y_esfera[i]*y_esfera[i]));      
-    }
-    fclose (x_y_z);
-  }
-*/
-  {
-      
-
-    FILE *MVs = fopen ("MVs(Smica2015).dat", "a");
-    FILE *FVs = fopen ("FVs(Smica2015).dat", "a");
-    char buff0[8192];
-    char buff1[8192];
     
-    memset (buff0, '\0', sizeof (buff0));
-    memset (buff1, '\0', sizeof (buff1));
+//    FILE *MVs_eta_varphi = fopen ("MVs_eta_varphi.dat", "a");
+//    FILE *FVs_theta_phi = fopen ("FVs_theta_phi.dat", "a");
+//    FILE *FVs_eta_varphi = fopen ("FVs_eta_varphi.dat", "a");
 
-    setvbuf (MVs, buff0, _IOFBF, 8192);
-    setvbuf (FVs, buff1, _IOFBF, 8192);
+//    char buff0[8192];
 
+//    char buff1[8192];
+//    char buff2[8192];
+//    char buff3[8192];
+    
+//    memset (buff0, '\0', sizeof (buff0));
 
-    for (int l = 2; l <= lmax; l++)
+//    memset (buff1, '\0', sizeof (buff1));
+//    memset (buff2, '\0', sizeof (buff2));
+//    memset (buff3, '\0', sizeof (buff3));
+
+//    setvbuf (MVs_theta_phi, buff0, _IOFBF, 8192);
+
+//    setvbuf (MVs_eta_varphi, buff1, _IOFBF, 8192);
+//    setvbuf (FVs_theta_phi, buff2, _IOFBF, 8192);
+//    setvbuf (FVs_eta_varphi, buff3, _IOFBF, 8192);
+
+    for (int l = 2; l <= LMAX; l++)
     {
-//      clock_t t;
-
-//      t = clock ();
-
+      
       mpf_t coef_real[(2 * l) + 1], coef_imag[(2 * l) + 1];
       double raiz_real[2 * l], raiz_imag[2 * l];
       double theta[2 * l], phi[2 * l];
-      double frechet_vec_theta, frechet_vec_phi;
-
+ //     double theta[2 * l], phi[2 * l], eta[2 * l], varphi[2 * l];
+ //     double frechet_vec_theta, frechet_vec_phi;
       coefi_pol (l, al_real, al_imag, coef_real, coef_imag);
       raizes_pol (l, coef_real, coef_imag, raiz_real, raiz_imag);
 
       for (int i = 0; i < ((2 * l) + 1); i++)
       {
         mpf_clears (coef_real[i], coef_imag[i], NULL);
-      }
-
+      } 
+ 
       coord_pol (l, raiz_real, raiz_imag, theta, phi);
-/*      eta_phi_pol(l, theta, phi, eta, varphi); */
-//      frechet_pol (l, theta, phi, theta_esfera, phi_esfera, x_esfera, y_esfera, z_esfera, &frechet_vec_theta, &frechet_vec_phi);
-//     printf ("M1: %f %f\n", frechet_vec_theta, frechet_vec_phi);
-//      frechet_pol2 (l, theta, phi,  &frechet_vec_theta, &frechet_vec_phi);
-//     printf ("M2: %f %f\n", frechet_vec_theta, frechet_vec_phi);
-      //printf ("% 22.15g % 22.15g\n", frechet_vec_theta, frechet_vec_phi);
+//      eta_phi_pol(l, theta, phi, eta, varphi);
+//      frechet_pol (l, theta, phi,  &frechet_vec_theta, &frechet_vec_phi);
 
-      for (int j = 0; j < 2 * l; j++)
+//      for(int j = (pow((l-1),2) + (l-1) - 2); j < (pow(l,2) + l - 2); j++)
+      int k = 0;
+      for(int j = 0; j < 2 * l; j++)
       {
-        fprintf (MVs, "%f %f\n", theta[j], phi[j]);
+        k = (pow((l-1),2) + (l-1) - 2) + j;
+        mvs_theta[k] = theta[j];
+        mvs_phi[k] = phi[j];
+
       }
 
-      fprintf (FVs, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
-      printf ("Calculado l = %i\n", l);
+      printf ("MC %i -- Calculado ell %i\r\r\r\r\r\r\r\r\r\r\r\r\r", i, l);
+//      for (int j = 0; j < 2 * l; j++)
+//      {
 
-//      t = clock () - t;
-//      printf ("Tempo para cada l: %lf\n", ((double) t) / ((CLOCKS_PER_SEC)));
+        //fprintf (MVs_theta_phi, "%f %f\n", theta[j], phi[j]);
+//        mvs_theta[((2*l) - 2) + j] = theta[j];
+
+//        fprintf (MVs_eta_varphi, "%f %f\n", eta[j], varphi[j]);
+//      } 
+
+//      fprintf (FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
+//      fprintf (FVs_theta_phi, "%f %f\n", M_PI + frechet_vec_theta, M_PI - frechet_vec_phi);
+
+//      fprintf (FVs_eta_varphi, "%f %f\n", (1 - cos(frechet_vec_theta)), (frechet_vec_phi/(2 * M_PI)));
+//      fprintf (FVs_eta_varphi, "%f %f\n", (1 - cos(M_PI + frechet_vec_theta)) , ((M_PI - frechet_vec_phi)/(2 * M_PI)));
+
+//      printf ("Calculado l = %i\n", l);
     }
 
-    
+    FILE *MVs_theta_phi = fopen (filename, "a"); 
+    for (int j = 0; j < MVS_NUMERO; j++)
+    {
+      fprintf (MVs_theta_phi, "%.15lf %.15lf\n", mvs_theta[j], mvs_phi[j]);
 
-    fclose (MVs);
-    fclose (FVs);
+    }
+    fclose (MVs_theta_phi);
+
+//    fclose (FVs_theta_phi);
   }
+
+
 }
 
+
 int
-main ()
+main (int argc, char *argv[ ])
 {
-  clock_t t;
+//  printf("%d\n", ALMS_NUMERO_LINHAS);
+//  printf("%d\n", MVS_NUMERO);
+//  static long int LMAX = argv[1] - '0'
+//  static long int ALS_NUMERO_TOTAL = argv[2] - '0'
+//  char DIRETORIO[300] = argv[3];
 
-  t = clock ();
+  int mc = atoi(argv[1]);
 
-  FILE *file;
+  char filename[300];
+  
+  static mpf_t al_real[ALMS_NUMERO_LINHAS];
+  static mpf_t al_imag[ALMS_NUMERO_LINHAS];
 
-  static mpf_t al_real[o];
-  static mpf_t al_imag[o];
+//    for(int i = (0 * ALS_NUMERO_TOTAL); i < (1 * ALS_NUMERO_TOTAL); i++)
+//    for(int i = 5; i < 10; i++)
 
+    sprintf(filename,"./alm_fullsky_smica_noise_%d_.dat", mc);
+//    file = fopen(filename, "r");
 
-  char filename[400];
-
-  for(int i = 0; i < als_numero; i++)
-  {
-//    sprintf(filename,"/home/ricardo/Mestrado/Programas/Testes/TestesPoli2/histogramas/ALMs/AL%d.dat", i);
-		file = fopen("Alms(Smica2015).dat", "r");
-
-    for (int j = 0; j < o; j++)
+//    FILE *file = fopen (FILE_ALMS, "r");
+    FILE *file = fopen (filename, "r");
+    for (int j = 0; j < ALMS_NUMERO_LINHAS; j++)
     {
       mpf_inits (al_real[j], al_imag[j], NULL);
       gmp_fscanf (file, "%Ff %Ff\n", &al_real[j], &al_imag[j]);
-
     }
   
     fclose (file);
-  
-    multipol_vec (al_real, al_imag);
 
-    for (int i = 0; i < o; i++)
+    printf ("Importado MC %i\n", mc);
+//    printf ("chamando mvs\n");
+    multipol_vec (mc, al_real, al_imag);
+
+    for (int al_num = 0; al_num < ALMS_NUMERO_LINHAS; al_num++)
     {
-      mpf_clears (al_real[i], al_imag[i], NULL);
+      mpf_clears (al_real[al_num], al_imag[al_num], NULL);
     }
-  }
-  t = clock () - t;
-  printf ("Tempo de execucao: %lf\n", ((double) t) / ((CLOCKS_PER_SEC)));
+
+    printf ("Calculado MC %i\n", mc);
+
+
 }
+
 
