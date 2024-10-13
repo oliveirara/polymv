@@ -3,7 +3,6 @@
 #include <string.h>
 #include <math.h>
 #include <complex.h>
-
 #include <gmp.h>
 #include <mps/mps.h>
 #include <nlopt.h>
@@ -11,12 +10,9 @@
 
 #define LMAX 2000
 #define NSIDE 64
-
 #define ALMS_NUMERO_LINHAS ((LMAX+1) * (LMAX+2))/2
 #define MVS_NUMERO (LMAX * (LMAX+1)) - 2 
-
 #define ACOS(ab) acos (((ab) > 1.0) ? 1.0 : (((ab) < -1.0) ? -1.0 : (ab)))
-
 
 typedef struct _FrechetData
 {
@@ -26,8 +22,7 @@ typedef struct _FrechetData
   double * restrict z;
 } FrechetData;
 
-
-/* Function to calculated the Polynomial Coefficients*/
+/* Function to calculate the Polynomial Coefficients*/
 void
 coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coef_imag[])
 {
@@ -35,29 +30,28 @@ coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coe
   mpf_t float_binom;
   mpf_t raiz_binom;
   mpf_t coef_negativ;
-  int index;  // This number can explode to big lists 
+  int index; // This number can explode to big lists
 
   mpz_inits (int_binom, NULL);
   mpf_inits (float_binom, raiz_binom, coef_negativ, NULL);
 
   mpf_inits (coef_real[l], coef_imag[l], NULL);
 
-  mpz_bin_uiui (int_binom, (2 * l), l); // Calculating the binomial 
-  mpf_set_z (float_binom, int_binom);   // Convert integer to float for extract the roots 
-  mpf_sqrt (raiz_binom, float_binom);   // Extract the roots 
+  mpz_bin_uiui (int_binom, (2 * l), l); // Calculating the binomial term
+  mpf_set_z (float_binom, int_binom);   // Convert integer to float for extract the roots
+  mpf_sqrt (raiz_binom, float_binom);   // Extract the roots
 
   mpf_mul (coef_real[l], raiz_binom, al_real[l]); // Multipling the multipol moments for the binomial root
   mpf_mul (coef_imag[l], raiz_binom, al_imag[l]);
 
- 
   for (int m = 1; m <= l; m++)
   {
     index = ((m * ((2 * LMAX) + 1 - m)) / 2) + l; // Calculating the position of alms
     mpf_inits (coef_real[l - m], coef_imag[l - m], coef_real[l + m], coef_imag[l + m], NULL);
 
-    mpz_bin_uiui (int_binom, (2 * l), (m + l)); // Calculating the binomial 
-    mpf_set_z (float_binom, int_binom);         // Convert integer to float for extract the roots 
-    mpf_sqrt (raiz_binom, float_binom);         // Extract the roots 
+    mpz_bin_uiui (int_binom, (2 * l), (m + l));   // Calculating the binomial term
+    mpf_set_z (float_binom, int_binom);           // Convert integer to float for extract the roots
+    mpf_sqrt (raiz_binom, float_binom);           // Extract the roots
 
     mpf_mul (coef_real[l - m], raiz_binom, al_real[index]);
     mpf_set_si (coef_negativ, pow (-1, m));
@@ -66,11 +60,11 @@ coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coe
     mpf_mul (coef_imag[l - m], raiz_binom, al_imag[index]);
     mpf_set_si (coef_negativ, pow (-1, m) * (-1));
     mpf_mul (coef_imag[l - m], coef_imag[l - m], coef_negativ);
-   
+
     mpf_mul (coef_real[l + m], raiz_binom, al_real[index]);
     mpf_mul (coef_imag[l + m], raiz_binom, al_imag[index]);
   }
- 	
+
   mpz_clears (int_binom, NULL);
   mpf_clears (float_binom, raiz_binom, NULL);
 }
@@ -97,8 +91,7 @@ raizes_pol (int l, mpf_t coef_real[], mpf_t coef_imag[], double *raiz_real, doub
 
   for (int i = 0; i < ((2 * l) + 1); i++)
   {
-    mps_monomial_poly_set_coefficient_q (s, p, i, rat_coef_real[i], rat_coef_imag[i]); 
-                                                                                                                                                         // o terceiro o coeficiente imaginário */
+    mps_monomial_poly_set_coefficient_q (s, p, i, rat_coef_real[i], rat_coef_imag[i]);
   }
 
   mps_context_set_input_poly (s, MPS_POLYNOMIAL (p));
@@ -122,10 +115,9 @@ raizes_pol (int l, mpf_t coef_real[], mpf_t coef_imag[], double *raiz_real, doub
   mps_polynomial_free (s, MPS_POLYNOMIAL (p));
   mps_context_free (s);
   cplx_vfree (results);
-
 }
 
-/* Function to find the coordenates of multipol vectors */
+/* Function to find the coordinates of multipole vectors */
 void
 coord_pol (int l, double raiz_real[], double raiz_imag[], double *theta, double *phi)
 {
@@ -137,21 +129,18 @@ coord_pol (int l, double raiz_real[], double raiz_imag[], double *theta, double 
   {
     z[i]     = raiz_real[i] + (raiz_imag[i] * I);
     R[i]     = cabs (z[i]);
-    phi[i]   = carg (z[i]); // Theta domain is (0, pi) - Phi domain is (0, 2*pi)  
-    theta[i] = 2 * atan (1 / R[i]);
+    phi[i]   = carg (z[i]);         // Phi domain is (0, 2*pi)
+    theta[i] = 2 * atan (1 / R[i]); // Theta domain is (0, pi)
   }
 }
 
-
-
-/*This function calculate the psi function of MVs for each ipix and return the "chutes" for minimize*/
+/*This function calculates the psi function of MVs for each ipix and returns the initial guess for minimize */
 void 
 guess(int ell, const double *x, const double *y, const double *z, double *s)
 {
-//    char psis_write[300] = "psis.dat";  //Remove this comment to save the psis values
-    int npix = (12 * NSIDE * NSIDE) / 2; // Total number of pixels divide per 2 
+    int npix = (12 * NSIDE * NSIDE) / 2; // Total number of pixels divide per 2
 
-    double pixel_coords[npix][3];   //IPIX that we work
+    double pixel_coords[npix][3];        // ipix that we work
     double vec[3];
 
     double psi_min = 1.0e300;
@@ -167,28 +156,24 @@ guess(int ell, const double *x, const double *y, const double *z, double *s)
         pixel_coords[ipix][2] = vec[2];
     }
 
-
     for(int ipix = 0; ipix < npix; ipix ++){
         double sum_arccos_squared = 0.0;
         double dot_product = 0.0;
-        
-        for(int pos_mv = 0; pos_mv < (ell); pos_mv ++){
 
+        for(int pos_mv = 0; pos_mv < (ell); pos_mv ++){
             dot_product =  (pixel_coords[ipix][0] * x[pos_mv]) + (pixel_coords[ipix][1] * y[pos_mv]) + (pixel_coords[ipix][2] * z[pos_mv]);
             sum_arccos_squared += (ACOS(dot_product) * ACOS(dot_product)) + ((M_PI - ACOS(dot_product)) * (M_PI - ACOS(dot_product)));
         }
-        
+
         psi[ipix] = sum_arccos_squared;
 
         if(sum_arccos_squared < psi_min){
-
             psi_min = sum_arccos_squared;
-            
+
             guess[0] = pixel_coords[ipix][0];
             guess[1] = pixel_coords[ipix][1];
             guess[2] = pixel_coords[ipix][2];
         }
-    
     }
 
     double theta_frechet[1], phi_frechet[1];
@@ -196,19 +181,7 @@ guess(int ell, const double *x, const double *y, const double *z, double *s)
 
     s[0] = theta_frechet[0];
     s[1] = phi_frechet[0];
-
-
-    /*Remove this comment to save the values of PSI function
-
-    FILE *PSIs = fopen(psis_write, "a");
-    for(int ipix = 0; ipix < npix; ipix ++){
-
-        fprintf(PSIs, "%.15f\n", psi[ipix]);
-    }
-    fclose(PSIs); */
-
 }
-
 
 double 
 frechet_pol_min (unsigned n, const double *x, double *grad, void *my_func_data)
@@ -218,11 +191,11 @@ frechet_pol_min (unsigned n, const double *x, double *grad, void *my_func_data)
   double fechet_mean = 0.0;  
   double x_v, y_v, z_v;
   int i;
-  
+
   {
     const double theta = x[0];
     const double phi   = x[1];
-    
+
     x_v = sin (theta) * cos (phi);
     y_v = sin (theta) * sin (phi);
     z_v = cos (theta);
@@ -251,7 +224,7 @@ frechet_pol_min (unsigned n, const double *x, double *grad, void *my_func_data)
         const double ab      = (x_v * fd->x[i]) + (y_v * fd->y[i]) + (z_v * fd->z[i]);
         const double acos_ab = ACOS (ab);
         const double sqrt_1mab = sqrt (1.0 - ab * ab);
-      
+
         grad[0] -= 2.0 * acos_ab * (dxdtheta * fd->x[i] + dydtheta * fd->y[i] + dzdtheta * fd->z[i]) / sqrt_1mab;
         grad[1] -= 2.0 * acos_ab * (dxdphi   * fd->x[i] + dydphi   * fd->y[i]                      ) / sqrt_1mab;
       }
@@ -260,7 +233,6 @@ frechet_pol_min (unsigned n, const double *x, double *grad, void *my_func_data)
 
   return fechet_mean;
 }
-
 
 void
 frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *frechet_vec_theta, double *frechet_vec_phi)
@@ -271,7 +243,7 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
   double f;
   int i;
   FrechetData fd = {l, x, y, z};
-  
+
   *frechet_vec_theta = 0.0;
   *frechet_vec_phi = 0.0;
 
@@ -285,7 +257,6 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
       ant_theta[muda] = theta[i];
       ant_phi[muda] = phi[i];
       muda++;
-      
     }
   }
 
@@ -300,7 +271,6 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
     z_ant[i] = cos (ant_theta[i]);
   }
 
-
   for (i = 0; i < twol; i++)
   {
     x[i] = sin (theta[i]) * cos (phi[i]);
@@ -309,7 +279,6 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
   }
 
   {
-
     double lb[2] = {0,  0};
     double ub[2] = {M_PI,  + 2.0 * M_PI};
     double s[2]  = {0.0, 0.0};
@@ -332,36 +301,32 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
     }
     else 
     {
-
       if (f < min_f)
       {
         min_f = f;
-
-          *frechet_vec_theta = s[0];
-          *frechet_vec_phi   = s[1];
+        *frechet_vec_theta = s[0];
+        *frechet_vec_phi   = s[1];
       }
     }
 
-
     if (*frechet_vec_theta > (M_PI / 2))
-  {
+    {
     *frechet_vec_theta = M_PI - *frechet_vec_theta;
     *frechet_vec_phi   = M_PI + *frechet_vec_phi;
 
     if (*frechet_vec_phi > (2 * M_PI))
-      *frechet_vec_phi = *frechet_vec_phi - (2 * M_PI);
-  }
-
+    {
+        *frechet_vec_phi = *frechet_vec_phi - (2 * M_PI);
+    }
+    }
 
     nlopt_destroy (opt);
-
-  } 
+  }
 }
 
 void
 multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
 {
-
   {
     static  double mvs_theta[MVS_NUMERO];
     static double mvs_phi[MVS_NUMERO];
@@ -369,37 +334,22 @@ multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
     char filename[400];
     sprintf(filename,"mvs_fullsky_smica_noise_%d_.dat", i);
 
-    
-//    FILE *MVs_eta_varphi = fopen ("MVs_eta_varphi.dat", "a");
-//    FILE *FVs_theta_phi = fopen ("FVs_theta_phi.dat", "a");
-//    FILE *FVs_eta_varphi = fopen ("FVs_eta_varphi.dat", "a");
+    FILE *FVs_theta_phi = fopen ("FVs_theta_phi.dat", "a");
 
 //    char buff0[8192];
-
 //    char buff1[8192];
-//    char buff2[8192];
-//    char buff3[8192];
     
 //    memset (buff0, '\0', sizeof (buff0));
-
 //    memset (buff1, '\0', sizeof (buff1));
-//    memset (buff2, '\0', sizeof (buff2));
-//    memset (buff3, '\0', sizeof (buff3));
 
 //    setvbuf (MVs_theta_phi, buff0, _IOFBF, 8192);
-
-//    setvbuf (MVs_eta_varphi, buff1, _IOFBF, 8192);
 //    setvbuf (FVs_theta_phi, buff2, _IOFBF, 8192);
-//    setvbuf (FVs_eta_varphi, buff3, _IOFBF, 8192);
 
     for (int l = 2; l <= LMAX; l++)
     {
-      
       mpf_t coef_real[(2 * l) + 1], coef_imag[(2 * l) + 1];
       double raiz_real[2 * l], raiz_imag[2 * l];
       double theta[2 * l], phi[2 * l];
- //     double theta[2 * l], phi[2 * l], eta[2 * l], varphi[2 * l];
- //     double frechet_vec_theta, frechet_vec_phi;
       coefi_pol (l, al_real, al_imag, coef_real, coef_imag);
       raizes_pol (l, coef_real, coef_imag, raiz_real, raiz_imag);
 
@@ -407,38 +357,20 @@ multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
       {
         mpf_clears (coef_real[i], coef_imag[i], NULL);
       } 
- 
-      coord_pol (l, raiz_real, raiz_imag, theta, phi);
-//      eta_phi_pol(l, theta, phi, eta, varphi);
-//      frechet_pol (l, theta, phi,  &frechet_vec_theta, &frechet_vec_phi);
 
-//      for(int j = (pow((l-1),2) + (l-1) - 2); j < (pow(l,2) + l - 2); j++)
+      coord_pol (l, raiz_real, raiz_imag, theta, phi);
+      frechet_pol (l, theta, phi,  &frechet_vec_theta, &frechet_vec_phi);
+
       int k = 0;
       for(int j = 0; j < 2 * l; j++)
       {
         k = (pow((l-1),2) + (l-1) - 2) + j;
         mvs_theta[k] = theta[j];
         mvs_phi[k] = phi[j];
-
       }
 
       printf ("MC %i -- Calculado ell %i\r\r\r\r\r\r\r\r\r\r\r\r\r", i, l);
-//      for (int j = 0; j < 2 * l; j++)
-//      {
-
-        //fprintf (MVs_theta_phi, "%f %f\n", theta[j], phi[j]);
-//        mvs_theta[((2*l) - 2) + j] = theta[j];
-
-//        fprintf (MVs_eta_varphi, "%f %f\n", eta[j], varphi[j]);
-//      } 
-
-//      fprintf (FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
-//      fprintf (FVs_theta_phi, "%f %f\n", M_PI + frechet_vec_theta, M_PI - frechet_vec_phi);
-
-//      fprintf (FVs_eta_varphi, "%f %f\n", (1 - cos(frechet_vec_theta)), (frechet_vec_phi/(2 * M_PI)));
-//      fprintf (FVs_eta_varphi, "%f %f\n", (1 - cos(M_PI + frechet_vec_theta)) , ((M_PI - frechet_vec_phi)/(2 * M_PI)));
-
-//      printf ("Calculado l = %i\n", l);
+      fprintf (FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
     }
 
     FILE *MVs_theta_phi = fopen (filename, "a"); 
@@ -448,18 +380,13 @@ multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
 
     }
     fclose (MVs_theta_phi);
-
-//    fclose (FVs_theta_phi);
+    fclose (FVs_theta_phi);
   }
-
-
 }
-
 
 int
 main (int argc, char *argv[ ])
 {
-
   int mc = atoi(argv[1]);
 
   char filename[300];
@@ -487,8 +414,4 @@ main (int argc, char *argv[ ])
   }
 
   printf ("Calculado MC %i\n", mc);
-
-
 }
-
-
