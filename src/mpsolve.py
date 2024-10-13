@@ -6,7 +6,7 @@ import ctypes.util
 
 # Load the libmps shared library. We should keep the .so version update
 # in case we bump it in the future.
-_mps = ctypes.CDLL("libmps.so.3")
+_mps = ctypes.CDLL("/home/renan/mpsolve/lib/libmps.so.3")
 
 
 class Cplx(ctypes.Structure):
@@ -28,8 +28,7 @@ class Cplx(ctypes.Structure):
 
 
 class Goal:
-    """ Goal to reach before returning the result.
-    """
+    """Goal to reach before returning the result."""
 
     MPS_OUTPUT_GOAL_ISOLATE = 0
     MPS_OUTPUT_GOAL_APPROXIMATE = 1
@@ -54,7 +53,7 @@ class Context:
     in libmps. A Context instance must be instantiated before
     allocating and/or solving polynomials and secular equations,
     and can then be used to specify the desired property of the
-    solution. """
+    solution."""
 
     def __init__(self):
         self._c_ctx = ctypes.c_void_p(_mps.mps_context_new())
@@ -77,7 +76,7 @@ class Context:
         previously loaded by a call to set_input_poly, or to the one passed
         as second argument to this function.
 
-        An optional third argument specify the desired algorithm. """
+        An optional third argument specify the desired algorithm."""
         if poly is not None:
             self.set_input_poly(poly)
 
@@ -88,13 +87,13 @@ class Context:
         _mps.mps_context_select_algorithm(self._c_ctx, algorithm)
         # _mps.mps_context_set_debug_level(self._c_ctx, 1)
         _mps.mps_context_set_output_prec(self._c_ctx, ctypes.c_long(53))
-        _mps.mps_context_set_output_goal(self._c_ctx, Goal.MPS_OUTPUT_GOAL_ISOLATE)
+        _mps.mps_context_set_output_goal(self._c_ctx, Goal.MPS_OUTPUT_GOAL_APPROXIMATE)
         _mps.mps_mpsolve(self._c_ctx)
 
     def solve(self, poly=None, algorithm=Algorithm.SECULAR_GA):
-        """Simple shorthand for the combination of set_input_poly() and mpsolve(). 
+        """Simple shorthand for the combination of set_input_poly() and mpsolve().
         This function directly returns the approximations that could otherwise be
-        obtained by a call to the get_roots() method. """
+        obtained by a call to the get_roots() method."""
         self.mpsolve(poly, algorithm)
         return self.get_roots()
 
@@ -127,7 +126,7 @@ class Context:
 
 
 class Polynomial:
-    """This is a wrapper around mps_polynomial structure. """
+    """This is a wrapper around mps_polynomial structure."""
 
     def __init__(self, ctx, degree):
         self._degree = int(degree)
@@ -138,7 +137,7 @@ class Polynomial:
 
 
 class MonomialPoly(Polynomial):
-    """A polynomial specified with its monomial coefficients. """
+    """A polynomial specified with its monomial coefficients."""
 
     def __init__(self, ctx, degree):
         Polynomial.__init__(self, ctx, degree)
@@ -150,7 +149,7 @@ class MonomialPoly(Polynomial):
         """Set coefficient of degree n of the polynomial
         to the value of coeff. Please note that you should use
         the same data type for all the coefficients, and you
-        should use integers when possible. """
+        should use integers when possible."""
 
         if coeff_im is not None and type(coeff_re) != type(coeff_im):
             raise ValueError(
@@ -192,8 +191,7 @@ have different types"
             raise RuntimeError("Coefficient type not supported")
 
     def get_coefficient(self, n):
-        """ Get a coefficient of the polynomial
-        """
+        """Get a coefficient of the polynomial"""
         mp = self._c_polynomial
         if n < 0 or n > self._degree or not isinstance(n, int):
             raise ValueError("Invalid coefficient degree")
@@ -205,8 +203,7 @@ have different types"
         return complex(cf)
 
     def get_coefficients(self):
-        """ Get list of coefficients of the polynomial
-        """
+        """Get list of coefficients of the polynomial"""
         mp = self._c_polynomial
         cf = (Cplx)()
         coeffs = []
