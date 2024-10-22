@@ -7,6 +7,7 @@
 #include <mps/mps.h>
 #include <nlopt.h>
 #include <chealpix.h>
+#include <omp.h>
 
 #define LMAX 2000
 #define NSIDE 64
@@ -141,11 +142,8 @@ guess(int ell, const double *x, const double *y, const double *z, double *s)
     int npix = (12 * NSIDE * NSIDE) / 2; // Total number of pixels divide per 2
 
     double pixel_coords[npix][3];        // ipix that we work
-    double vec[3];
 
     double psi_min = 1.0e300;
-    double chute_x, chute_y, chute_z;
-    double psi[npix];
     double guess[3];
 
     for (int ipix = 0; ipix < npix; ipix++) {
@@ -164,8 +162,6 @@ guess(int ell, const double *x, const double *y, const double *z, double *s)
             dot_product =  (pixel_coords[ipix][0] * x[pos_mv]) + (pixel_coords[ipix][1] * y[pos_mv]) + (pixel_coords[ipix][2] * z[pos_mv]);
             sum_arccos_squared += (ACOS(dot_product) * ACOS(dot_product)) + ((M_PI - ACOS(dot_product)) * (M_PI - ACOS(dot_product)));
         }
-
-        psi[ipix] = sum_arccos_squared;
 
         if(sum_arccos_squared < psi_min){
             psi_min = sum_arccos_squared;
@@ -327,61 +323,62 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
 void
 multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
 {
+  static double mvs_theta[MVS_NUMERO];
+  static double mvs_phi[MVS_NUMERO];
+
+  char filename[400];
+  sprintf(filename,"mvs_fullsky_smica_noise_%d_.dat", i);
+
+  FILE *FVs_theta_phi = fopen ("FVs_theta_phi.dat", "a");
+
+  char buff0[8192];
+  char buff1[8192];
+  
+  memset (buff0, '\0', sizeof (buff0));
+  memset (buff1, '\0', sizeof (buff1));
+
+  setvbuf (FVs_theta_phi, buff1, _IOFBF, 8192);
+
+  #pragma omp parallel for
+  for (int l = 2; l <= LMAX; l++)
   {
-    static  double mvs_theta[MVS_NUMERO];
-    static double mvs_phi[MVS_NUMERO];
+    mpf_t coef_real[(2 * l) + 1], coef_imag[(2 * l) + 1];
+    double raiz_real[2 * l], raiz_imag[2 * l];
+    double theta[2 * l], phi[2 * l];
+    double frechet_vec_theta, frechet_vec_phi;
 
-    char filename[400];
-    sprintf(filename,"mvs_fullsky_smica_noise_%d_.dat", i);
+    coefi_pol (l, al_real, al_imag, coef_real, coef_imag);
+    raizes_pol (l, coef_real, coef_imag, raiz_real, raiz_imag);
 
-    FILE *FVs_theta_phi = fopen ("FVs_theta_phi.dat", "a");
-
-//    char buff0[8192];
-//    char buff1[8192];
-    
-//    memset (buff0, '\0', sizeof (buff0));
-//    memset (buff1, '\0', sizeof (buff1));
-
-//    setvbuf (MVs_theta_phi, buff0, _IOFBF, 8192);
-//    setvbuf (FVs_theta_phi, buff2, _IOFBF, 8192);
-
-    for (int l = 2; l <= LMAX; l++)
+    for (int i = 0; i < ((2 * l) + 1); i++)
     {
-      mpf_t coef_real[(2 * l) + 1], coef_imag[(2 * l) + 1];
-      double raiz_real[2 * l], raiz_imag[2 * l];
-      double theta[2 * l], phi[2 * l];
-      coefi_pol (l, al_real, al_imag, coef_real, coef_imag);
-      raizes_pol (l, coef_real, coef_imag, raiz_real, raiz_imag);
+      mpf_clears (coef_real[i], coef_imag[i], NULL);
+    } 
 
-      for (int i = 0; i < ((2 * l) + 1); i++)
-      {
-        mpf_clears (coef_real[i], coef_imag[i], NULL);
-      } 
+    coord_pol (l, raiz_real, raiz_imag, theta, phi);
+    frechet_pol2 (l, theta, phi,  &frechet_vec_theta, &frechet_vec_phi);
 
-      coord_pol (l, raiz_real, raiz_imag, theta, phi);
-      frechet_pol (l, theta, phi,  &frechet_vec_theta, &frechet_vec_phi);
-
-      int k = 0;
-      for(int j = 0; j < 2 * l; j++)
-      {
-        k = (pow((l-1),2) + (l-1) - 2) + j;
-        mvs_theta[k] = theta[j];
-        mvs_phi[k] = phi[j];
-      }
-
-      printf ("MC %i -- Calculado ell %i\r\r\r\r\r\r\r\r\r\r\r\r\r", i, l);
-      fprintf (FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
+    int k = 0;
+    for(int j = 0; j < 2 * l; j++)
+    {
+      k = (pow((l-1),2) + (l-1) - 2) + j;
+      mvs_theta[k] = theta[j];
+      mvs_phi[k] = phi[j];
     }
 
-    FILE *MVs_theta_phi = fopen (filename, "a"); 
-    for (int j = 0; j < MVS_NUMERO; j++)
-    {
-      fprintf (MVs_theta_phi, "%.15lf %.15lf\n", mvs_theta[j], mvs_phi[j]);
-
-    }
-    fclose (MVs_theta_phi);
-    fclose (FVs_theta_phi);
+    printf ("MC %i -- Calculado ell %i\r\r\r\r\r\r\r\r\r\r\r\r\r", i, l);
+    fprintf (FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
   }
+
+  FILE *MVs_theta_phi = fopen (filename, "a");
+  setvbuf (MVs_theta_phi, buff0, _IOFBF, 8192);
+
+  for (int j = 0; j < MVS_NUMERO; j++)
+  {
+    fprintf (MVs_theta_phi, "%.15lf %.15lf\n", mvs_theta[j], mvs_phi[j]);
+  }
+  fclose (MVs_theta_phi);
+  fclose (FVs_theta_phi);
 }
 
 int
