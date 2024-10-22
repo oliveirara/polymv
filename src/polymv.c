@@ -9,10 +9,7 @@
 #include <chealpix.h>
 #include <omp.h>
 
-#define LMAX 2000
 #define NSIDE 64
-#define ALMS_NUMERO_LINHAS ((LMAX+1) * (LMAX+2))/2
-#define MVS_NUMERO (LMAX * (LMAX+1)) - 2 
 #define ACOS(ab) acos (((ab) > 1.0) ? 1.0 : (((ab) < -1.0) ? -1.0 : (ab)))
 
 typedef struct _FrechetData
@@ -24,8 +21,7 @@ typedef struct _FrechetData
 } FrechetData;
 
 /* Function to calculate the Polynomial Coefficients*/
-void
-coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coef_imag[])
+void coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coef_imag[], int LMAX)
 {
   mpz_t int_binom;
   mpf_t float_binom;
@@ -320,16 +316,17 @@ frechet_pol2 (int l, double * restrict theta, double * restrict phi, double *fre
   }
 }
 
-void
-multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
+void 
+multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[], int LMAX)
 {
-  static double mvs_theta[MVS_NUMERO];
-  static double mvs_phi[MVS_NUMERO];
+  int MVS_NUMERO = (LMAX * (LMAX + 1)) - 2;
+  double *mvs_theta = (double *)malloc(MVS_NUMERO * sizeof(double));
+  double *mvs_phi = (double *)malloc(MVS_NUMERO * sizeof(double));
 
   char filename[400];
-  sprintf(filename,"mvs_fullsky_smica_noise_%d_.dat", i);
+  sprintf(filename,"MVs.dat");
 
-  FILE *FVs_theta_phi = fopen ("FVs_theta_phi.dat", "a");
+  FILE *FVs_theta_phi = fopen ("FVs.dat", "a");
 
   char buff0[8192];
   char buff1[8192];
@@ -347,7 +344,7 @@ multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
     double theta[2 * l], phi[2 * l];
     double frechet_vec_theta, frechet_vec_phi;
 
-    coefi_pol (l, al_real, al_imag, coef_real, coef_imag);
+    coefi_pol (l, al_real, al_imag, coef_real, coef_imag, LMAX);
     raizes_pol (l, coef_real, coef_imag, raiz_real, raiz_imag);
 
     for (int i = 0; i < ((2 * l) + 1); i++)
@@ -377,23 +374,37 @@ multipol_vec (int i, mpf_t al_real[], mpf_t al_imag[])
   {
     fprintf (MVs_theta_phi, "%.15lf %.15lf\n", mvs_theta[j], mvs_phi[j]);
   }
+
   fclose (MVs_theta_phi);
   fclose (FVs_theta_phi);
+  free(mvs_theta);
+  free(mvs_phi);
 }
 
-int
-main (int argc, char *argv[ ])
+int main (int argc, char *argv[])
 {
+  if (argc < 4) {
+    fprintf(stderr, "Usage: %s <mc> <LMAX> <filename>\n", argv[0]);
+    return 1;
+  }
+
   int mc = atoi(argv[1]);
+  int LMAX = atoi(argv[2]);
+  char *filename = argv[3];
 
-  char filename[300];
-  
-  static mpf_t al_real[ALMS_NUMERO_LINHAS];
-  static mpf_t al_imag[ALMS_NUMERO_LINHAS];
+  int ALMS_NUMERO_LINHAS = ((LMAX + 1) * (LMAX + 2)) / 2;
 
-  sprintf(filename,"./alm_fullsky_smica_noise_%d_.dat", mc);
+  mpf_t *al_real = (mpf_t *)malloc(ALMS_NUMERO_LINHAS * sizeof(mpf_t));
+  mpf_t *al_imag = (mpf_t *)malloc(ALMS_NUMERO_LINHAS * sizeof(mpf_t));
 
   FILE *file = fopen (filename, "r");
+  if (!file) {
+    perror("Error opening file");
+    free(al_real);
+    free(al_imag);
+    return 1;
+  }
+
   for (int j = 0; j < ALMS_NUMERO_LINHAS; j++)
   {
     mpf_inits (al_real[j], al_imag[j], NULL);
@@ -403,12 +414,16 @@ main (int argc, char *argv[ ])
   fclose (file);
   printf ("Importado MC %i\n", mc);
 
-  multipol_vec (mc, al_real, al_imag);
+  multipol_vec (mc, al_real, al_imag, LMAX);
 
   for (int al_num = 0; al_num < ALMS_NUMERO_LINHAS; al_num++)
   {
     mpf_clears (al_real[al_num], al_imag[al_num], NULL);
   }
 
+  free(al_real);
+  free(al_imag);
+
   printf ("Calculado MC %i\n", mc);
+  return 0;
 }
