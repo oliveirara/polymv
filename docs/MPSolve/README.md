@@ -29,7 +29,6 @@ conda activate mpsolve
 
 If you're root:
 
-
 ```bash
 # apt update
 # apt install autoconf automake autotools-dev bison check cmake curl flex g++ gcc gfortran git help2man libgmp-dev libmps-dev libpthread-stubs0-dev libtool m4 make pkg-config texinfo wget

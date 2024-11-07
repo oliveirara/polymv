@@ -3,12 +3,14 @@
 To compile the C code for polyMV, you must first install the following software:
 
 ## MPSolve 📚
+
 [See here](../docs/MPSolve/README.md)
 
 ## Automake 1.17 🔧
+
 ```bash
 wget https://ftp.gnu.org/gnu/automake/automake-1.17.tar.gz
-tar -xvf automake-1.17.tar.gz 
+tar -xvf automake-1.17.tar.gz
 cd automake-1.17/
 ./configure
 make shared
@@ -18,6 +20,7 @@ sudo ldconfig
 ```
 
 ## CFITSIO 🌌
+
 ```bash
 git clone https://github.com/HEASARC/cfitsio.git
 cd cfitsio/
@@ -27,6 +30,7 @@ sudo make install
 ```
 
 ## CHealpix 🌍
+
 ```bash
 git clone https://github.com/fabienbaron/chealpix.git
 cd chealpix/
@@ -36,14 +40,16 @@ sudo ldconfig
 ```
 
 ## nlopt 📈
+
 ```bash
 wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz
-tar -xvf v2.7.1.tar.gz 
+tar -xvf v2.7.1.tar.gz
 cd nlopt-2.7.1/
 cmake . && make && sudo make install
 ```
 
 ## Compilation Command 🛠️
+
 After installing the required software, navigate to the src folder and run the following command to compile polyMV:
 
 ```bash
