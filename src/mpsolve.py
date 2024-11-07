@@ -6,7 +6,7 @@ import ctypes.util
 
 # Load the libmps shared library. We should keep the .so version update
 # in case we bump it in the future.
-_mps = ctypes.CDLL("/home/renan/mpsolve/lib/libmps.so.3")
+_mps = ctypes.CDLL("/usr/local/lib/libmps.so.3")
 
 
 class Cplx(ctypes.Structure):
