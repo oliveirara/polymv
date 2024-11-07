@@ -395,7 +395,7 @@ void multipol_vec(int i, mpf_t al_real[], mpf_t al_imag[], int LMAX) {
     setvbuf(FVs_theta_phi, buff1, _IOFBF, BUFFER_SIZE);
 
     // Parallel loop for calculations
-    #pragma omp parallel for
+    #pragma omp parallel for ordered
     for (int l = 2; l <= LMAX; l++) {
         mpf_t coef_real[(2 * l) + 1], coef_imag[(2 * l) + 1];
         double raiz_real[2 * l], raiz_imag[2 * l];
