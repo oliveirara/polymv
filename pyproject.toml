@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "polyMV"
+version = "0.1"
+description = "Obtain Multipole Vectors and Frechet Vectors."
+authors = ["Renan Alves de Oliveira <oliveirara@uel.br>"]
+license = "GPL-3.0"
+readme = "README.md"
+homepage = "https://github.com/oliveirara/polyMV"
+keywords = ["multipole-vectors", "frechet-vectors", "cosmology", "cosmic-microwave-background"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+numba = "^0.60.0"
+gmpy2 = "^2.2.1"
+healpy = "^1.18.0"
+iteration-utilities = "^0.13.0"
+
+[tool.poetry.urls]
+MPSolve = "https://github.com/robol/MPSolve"
+Planck_Legacy_Archive = "https://pla.esac.esa.int/"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
