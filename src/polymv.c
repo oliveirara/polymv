@@ -23,6 +23,21 @@ typedef struct _FrechetData
   double * restrict z;
 } FrechetData;
 
+void print_progress_bar(int current, int total) {
+    int bar_width = 50;
+    float progress = (float)current / total;
+    int pos = bar_width * progress;
+
+    printf("[");
+    for (int i = 0; i < bar_width; ++i) {
+        if (i < pos) printf("=");
+        else if (i == pos) printf(">");
+        else printf(" ");
+    }
+    printf("] %d%%\r", (int)(progress * 100));
+    fflush(stdout);
+}
+
 /* Function to calculate the Polynomial Coefficients*/
 void coefi_pol (int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[], mpf_t coef_imag[], int LMAX)
 {
@@ -429,6 +444,11 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
 
         // Print progress
         fprintf(FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
+
+        #pragma omp critical
+        {
+            print_progress_bar(l - 1, LMAX - 1);
+        }
     }
 
     // Open file for writing mvs_theta and mvs_phi
@@ -452,6 +472,8 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
     fclose(FVs_theta_phi);
     free(mvs_theta);
     free(mvs_phi);
+
+    printf("\n"); // Move to the next line after the progress bar is complete
 }
 
 int main(int argc, char *argv[]) {
