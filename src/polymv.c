@@ -13,7 +13,7 @@
 #define BUFFER_SIZE 8192
 #define FILENAME_SIZE 400
 #define ACOS(ab) acos (((ab) > 1.0) ? 1.0 : (((ab) < -1.0) ? -1.0 : (ab)))
-#define USAGE_MESSAGE "Usage: %s <mc> <LMAX> <filename>\n"
+#define USAGE_MESSAGE "Usage: %s <LMAX> <filename>\n"
 
 typedef struct _FrechetData
 {
@@ -361,7 +361,7 @@ void frechet_pol2(int l, double *restrict theta, double *restrict phi, double *f
     }
 }
 
-void multipol_vec(int i, mpf_t al_real[], mpf_t al_imag[], int LMAX) {
+void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
     // Define constants
     const int MVS_NUMERO = (LMAX * (LMAX + 1)) - 2;
 
@@ -428,7 +428,6 @@ void multipol_vec(int i, mpf_t al_real[], mpf_t al_imag[], int LMAX) {
         }
 
         // Print progress
-        printf("MC %i -- Calculado ell %i\r", i, l);
         fprintf(FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
     }
 
@@ -457,15 +456,14 @@ void multipol_vec(int i, mpf_t al_real[], mpf_t al_imag[], int LMAX) {
 
 int main(int argc, char *argv[]) {
     // Check for correct number of arguments
-    if (argc < 4) {
+    if (argc < 3) {
         fprintf(stderr, USAGE_MESSAGE, argv[0]);
         return 1;
     }
 
     // Parse command-line arguments
-    int mc = atoi(argv[1]);
-    int LMAX = atoi(argv[2]);
-    char *filename = argv[3];
+    int LMAX = atoi(argv[1]);
+    char *filename = argv[2];
 
     // Calculate the number of lines
     int ALMS_NUMERO_LINHAS = ((LMAX + 1) * (LMAX + 2)) / 2;
@@ -506,10 +504,9 @@ int main(int argc, char *argv[]) {
 
     // Close the file
     fclose(file);
-    printf("Importado MC %i\n", mc);
 
     // Perform calculations
-    multipol_vec(mc, al_real, al_imag, LMAX);
+    multipol_vec(al_real, al_imag, LMAX);
 
     // Clear and free memory
     for (int al_num = 0; al_num < ALMS_NUMERO_LINHAS; al_num++) {
@@ -518,6 +515,5 @@ int main(int argc, char *argv[]) {
     free(al_real);
     free(al_imag);
 
-    printf("Calculado MC %i\n", mc);
     return 0;
 }
