@@ -14,7 +14,7 @@
 #define BUFFER_SIZE 8192
 #define FILENAME_SIZE 400
 #define ACOS(ab) acos (((ab) > 1.0) ? 1.0 : (((ab) < -1.0) ? -1.0 : (ab)))
-#define USAGE_MESSAGE "Usage: %s <LMAX> <filename>\n"
+#define USAGE_MESSAGE "Usage: %s <LMAX> <input_filename> [output_filename]\n"
 
 typedef struct _FrechetData
 {
@@ -377,7 +377,7 @@ void frechet_pol2(int l, double *restrict theta, double *restrict phi, double *f
     }
 }
 
-void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
+void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output_filename) {
     // Define constants
     const int MVS_NUMERO = (LMAX * (LMAX + 1)) - 2;
 
@@ -447,7 +447,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
     }
 
     // Create HDF5 file
-    hid_t file_id = H5Fcreate("results.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    hid_t file_id = H5Fcreate(output_filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if (file_id < 0) {
         fprintf(stderr, "Failed to create HDF5 file\n");
         free(mvs_theta);
@@ -500,7 +500,8 @@ int main(int argc, char *argv[]) {
 
     // Parse command-line arguments
     int LMAX = atoi(argv[1]);
-    char *filename = argv[2];
+    char *input_filename = argv[2];
+    char *output_filename = (argc > 3) ? argv[3] : "results.h5";
 
     // Calculate the number of lines
     int ALMS_NUMERO_LINHAS = ((LMAX + 1) * (LMAX + 2)) / 2;
@@ -516,7 +517,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Open the file for reading
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen(input_filename, "r");
     if (!file) {
         perror("Error opening file");
         free(al_real);
@@ -543,7 +544,7 @@ int main(int argc, char *argv[]) {
     fclose(file);
 
     // Perform calculations
-    multipol_vec(al_real, al_imag, LMAX);
+    multipol_vec(al_real, al_imag, LMAX, output_filename);
 
     // Clear and free memory
     for (int al_num = 0; al_num < ALMS_NUMERO_LINHAS; al_num++) {
