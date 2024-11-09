@@ -8,6 +8,7 @@
 #include <nlopt.h>
 #include <chealpix.h>
 #include <omp.h>
+#include <hdf5.h>
 
 #define NSIDE 64
 #define BUFFER_SIZE 8192
@@ -390,24 +391,17 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
         return;
     }
 
-    // Open file for writing
-    char filename[FILENAME_SIZE];
-    snprintf(filename, FILENAME_SIZE, "MVs.dat");
-
-    FILE *FVs_theta_phi = fopen("FVs.dat", "a");
-    if (FVs_theta_phi == NULL) {
-        fprintf(stderr, "Failed to open FVs.dat\n");
+    // Allocate memory for frechet_vec_theta and frechet_vec_phi
+    double *frechet_vec_theta = (double *)malloc((LMAX - 1) * sizeof(double));
+    double *frechet_vec_phi = (double *)malloc((LMAX - 1) * sizeof(double));
+    if (frechet_vec_theta == NULL || frechet_vec_phi == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
         free(mvs_theta);
         free(mvs_phi);
+        free(frechet_vec_theta);
+        free(frechet_vec_phi);
         return;
     }
-
-    // Set buffer for file
-    char buff0[BUFFER_SIZE];
-    char buff1[BUFFER_SIZE];
-    memset(buff0, '\0', sizeof(buff0));
-    memset(buff1, '\0', sizeof(buff1));
-    setvbuf(FVs_theta_phi, buff1, _IOFBF, BUFFER_SIZE);
 
     // Parallel loop for calculations
     #pragma omp parallel for ordered
@@ -415,7 +409,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
         mpf_t coef_real[(2 * l) + 1], coef_imag[(2 * l) + 1];
         double raiz_real[2 * l], raiz_imag[2 * l];
         double theta[2 * l], phi[2 * l];
-        double frechet_vec_theta, frechet_vec_phi;
+        double frechet_theta, frechet_phi;
 
         // Calculate polynomial coefficients
         coefi_pol(l, al_real, al_imag, coef_real, coef_imag, LMAX);
@@ -432,7 +426,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
         coord_pol(l, raiz_real, raiz_imag, theta, phi);
 
         // Calculate Frechet mean
-        frechet_pol2(l, theta, phi, &frechet_vec_theta, &frechet_vec_phi);
+        frechet_pol2(l, theta, phi, &frechet_theta, &frechet_phi);
 
         // Store theta and phi values
         int k = 0;
@@ -442,8 +436,9 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
             mvs_phi[k] = phi[j];
         }
 
-        // Print progress
-        fprintf(FVs_theta_phi, "%f %f\n", frechet_vec_theta, frechet_vec_phi);
+        // Store Frechet mean values
+        frechet_vec_theta[l - 2] = frechet_theta;
+        frechet_vec_phi[l - 2] = frechet_phi;
 
         #pragma omp critical
         {
@@ -451,27 +446,47 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX) {
         }
     }
 
-    // Open file for writing mvs_theta and mvs_phi
-    FILE *MVs_theta_phi = fopen(filename, "a");
-    if (MVs_theta_phi == NULL) {
-        fprintf(stderr, "Failed to open %s\n", filename);
-        fclose(FVs_theta_phi);
+    // Create HDF5 file
+    hid_t file_id = H5Fcreate("results.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    if (file_id < 0) {
+        fprintf(stderr, "Failed to create HDF5 file\n");
         free(mvs_theta);
         free(mvs_phi);
+        free(frechet_vec_theta);
+        free(frechet_vec_phi);
         return;
     }
-    setvbuf(MVs_theta_phi, buff0, _IOFBF, BUFFER_SIZE);
 
-    // Write mvs_theta and mvs_phi to file
-    for (int j = 0; j < MVS_NUMERO; j++) {
-        fprintf(MVs_theta_phi, "%.15lf %.15lf\n", mvs_theta[j], mvs_phi[j]);
-    }
+    // Create datasets for mvs_theta and mvs_phi
+    hsize_t dims[1] = {MVS_NUMERO};
+    hid_t dataspace_id = H5Screate_simple(1, dims, NULL);
+    hid_t dataset_id = H5Dcreate(file_id, "mvs_theta", H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, mvs_theta);
+    H5Dclose(dataset_id);
 
-    // Close files and free memory
-    fclose(MVs_theta_phi);
-    fclose(FVs_theta_phi);
+    dataset_id = H5Dcreate(file_id, "mvs_phi", H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, mvs_phi);
+    H5Dclose(dataset_id);
+
+    // Create datasets for frechet_vec_theta and frechet_vec_phi
+    dims[0] = LMAX - 1;
+    dataspace_id = H5Screate_simple(1, dims, NULL);
+    dataset_id = H5Dcreate(file_id, "frechet_vec_theta", H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frechet_vec_theta);
+    H5Dclose(dataset_id);
+
+    dataset_id = H5Dcreate(file_id, "frechet_vec_phi", H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frechet_vec_phi);
+    H5Dclose(dataset_id);
+
+    // Close HDF5 file
+    H5Fclose(file_id);
+
+    // Free memory
     free(mvs_theta);
     free(mvs_phi);
+    free(frechet_vec_theta);
+    free(frechet_vec_phi);
 
     printf("\n"); // Move to the next line after the progress bar is complete
 }
