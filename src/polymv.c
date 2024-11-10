@@ -118,7 +118,9 @@ void raizes_pol(int l, mpf_t coef_real[], mpf_t coef_imag[], double *raiz_real, 
         mps_context_free(s);
         return;
     }
-    mps_context_select_algorithm(s, MPS_ALGORITHM_SECULAR_GA);
+    mps_context_select_algorithm(s, MPS_OUTPUT_GOAL_APPROXIMATE); // Original was MPS_ALGORITHM_SECULAR_GA
+    mps_context_set_output_prec (s, 53);
+    // mps_context_set_crude_approximation_mode (s, true); This might improve the performance. However, doesn't guarranty efficient results.
 
     // Set polynomial coefficients
     for (int i = 0; i < (2 * l) + 1; i++) {
@@ -290,9 +292,9 @@ double frechet_pol_min(unsigned n, const double *x, double *grad, void *my_func_
     return frechet_mean;
 }
 
-void frechet_pol2(int l, double *restrict theta, double *restrict phi, double *frechet_vec_theta, double *frechet_vec_phi) {
+void frechet_pol2(int l, double *restrict theta, double *restrict phi, double *frechet_vec_theta, double *frechet_vec_phi, double *min_f) {
     // Check for NULL pointers
-    if (theta == NULL || phi == NULL || frechet_vec_theta == NULL || frechet_vec_phi == NULL) {
+    if (theta == NULL || phi == NULL || frechet_vec_theta == NULL || frechet_vec_phi == NULL || min_f == NULL) {
         return;
     }
 
@@ -343,7 +345,6 @@ void frechet_pol2(int l, double *restrict theta, double *restrict phi, double *f
         double lb[2] = {0, 0};
         double ub[2] = {M_PI, 2.0 * M_PI};
         double s[2] = {0.0, 0.0};
-        double min_f = 1.0e300;
 
         nlopt_opt opt = nlopt_create(NLOPT_LN_NELDERMEAD, 2);
 
@@ -357,11 +358,9 @@ void frechet_pol2(int l, double *restrict theta, double *restrict phi, double *f
         if (nlopt_optimize(opt, s, &f) < 0) {
             printf("nlopt failed!\n");
         } else {
-            if (f < min_f) {
-                min_f = f;
-                *frechet_vec_theta = s[0];
-                *frechet_vec_phi = s[1];
-            }
+            *min_f = f;
+            *frechet_vec_theta = s[0];
+            *frechet_vec_phi = s[1];
         }
 
         if (*frechet_vec_theta > (M_PI / 2)) {
@@ -391,15 +390,17 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
         return;
     }
 
-    // Allocate memory for frechet_vec_theta and frechet_vec_phi
+    // Allocate memory for frechet_vec_theta, frechet_vec_phi, and min_f
     double *frechet_vec_theta = (double *)malloc((LMAX - 1) * sizeof(double));
     double *frechet_vec_phi = (double *)malloc((LMAX - 1) * sizeof(double));
-    if (frechet_vec_theta == NULL || frechet_vec_phi == NULL) {
+    double *min_f = (double *)malloc((LMAX - 1) * sizeof(double));
+    if (frechet_vec_theta == NULL || frechet_vec_phi == NULL || min_f == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
         free(mvs_theta);
         free(mvs_phi);
         free(frechet_vec_theta);
         free(frechet_vec_phi);
+        free(min_f);
         return;
     }
 
@@ -409,7 +410,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
         mpf_t coef_real[(2 * l) + 1], coef_imag[(2 * l) + 1];
         double raiz_real[2 * l], raiz_imag[2 * l];
         double theta[2 * l], phi[2 * l];
-        double frechet_theta, frechet_phi;
+        double frechet_theta, frechet_phi, min_f_val;
 
         // Calculate polynomial coefficients
         coefi_pol(l, al_real, al_imag, coef_real, coef_imag, LMAX);
@@ -426,7 +427,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
         coord_pol(l, raiz_real, raiz_imag, theta, phi);
 
         // Calculate Frechet mean
-        frechet_pol2(l, theta, phi, &frechet_theta, &frechet_phi);
+        frechet_pol2(l, theta, phi, &frechet_theta, &frechet_phi, &min_f_val);
 
         // Store theta and phi values
         int k = 0;
@@ -436,9 +437,10 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
             mvs_phi[k] = phi[j];
         }
 
-        // Store Frechet mean values
+        // Store Frechet mean values and min_f
         frechet_vec_theta[l - 2] = frechet_theta;
         frechet_vec_phi[l - 2] = frechet_phi;
+        min_f[l - 2] = min_f_val;
 
         #pragma omp critical
         {
@@ -454,6 +456,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
         free(mvs_phi);
         free(frechet_vec_theta);
         free(frechet_vec_phi);
+        free(min_f);
         return;
     }
 
@@ -468,7 +471,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
     H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, mvs_phi);
     H5Dclose(dataset_id);
 
-    // Create datasets for frechet_vec_theta and frechet_vec_phi
+    // Create datasets for frechet_vec_theta, frechet_vec_phi, and min_f
     dims[0] = LMAX - 1;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate(file_id, "frechet_vec_theta", H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -479,6 +482,10 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
     H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frechet_vec_phi);
     H5Dclose(dataset_id);
 
+    dataset_id = H5Dcreate(file_id, "min_f", H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, min_f);
+    H5Dclose(dataset_id);
+
     // Close HDF5 file
     H5Fclose(file_id);
 
@@ -487,6 +494,7 @@ void multipol_vec(mpf_t al_real[], mpf_t al_imag[], int LMAX, const char *output
     free(mvs_phi);
     free(frechet_vec_theta);
     free(frechet_vec_phi);
+    free(min_f);
 
     printf("\n"); // Move to the next line after the progress bar is complete
 }
