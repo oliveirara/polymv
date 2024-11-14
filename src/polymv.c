@@ -120,7 +120,6 @@ void raizes_pol(int l, mpf_t coef_real[], mpf_t coef_imag[], double *raiz_real, 
     }
     mps_context_select_algorithm(s, MPS_OUTPUT_GOAL_APPROXIMATE); // Original was MPS_ALGORITHM_SECULAR_GA
     mps_context_set_output_prec (s, 53);
-    // mps_context_set_crude_approximation_mode (s, true); This might improve the performance. However, doesn't guarranty efficient results.
 
     // Set polynomial coefficients
     for (int i = 0; i < (2 * l) + 1; i++) {
