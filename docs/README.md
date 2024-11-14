@@ -1,10 +1,10 @@
 # polyMV Compilation Guide
 
-Follow these steps to compile the polyMV program. If you have `sudo` permissions, follow `Installation 1`. Otherwise, follow `Installation 2`. This README where prepared using a Docker image from Ubuntu distribution.
+Follow these steps to compile the polyMV program. If you have `sudo` permissions, follow `Installation 1`. Otherwise, follow `Installation 2`. This README was prepared using a Docker image from the Ubuntu distribution.
 
 ## Installation 1
 
-### System packages
+### System Packages
 
 Update and install the packages below:
 
@@ -28,7 +28,7 @@ sudo make install
 sudo ldconfig
 ```
 
-Verify the Installation. Reset the shell and check the MPSolve version:
+Verify the installation. Reset the shell and check the MPSolve version:
 
 ```bash
 mpsolve -v
@@ -108,7 +108,7 @@ And that's it! 🎉
 
 ## Installation 2
 
-Sometimes you don't have `sudo` powers. However, if you specify correctly the PATH, you compile and install whatever library/software. First, let's define where we are going to install most of all necessary packages:
+Sometimes you don't have `sudo` powers. However, if you specify the PATH correctly, you can compile and install the necessary libraries/software. First, let's define where we are going to install most of the necessary packages:
 
 ```bash
 mkdir ~/software
@@ -122,7 +122,7 @@ Download and install Miniforge:
 ```bash
 wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
 bash Miniforge3-Linux-x86_64.sh 
-source .bashrc
+source ~/.bashrc
 ```
 
 ### Install packages using mamba
@@ -132,7 +132,7 @@ Optional: you can create your own environment to install all packages. For this 
 ```bash
 mamba install gcc gxx autoconf cmake gmp automake bison flex libtool m4 cython help2man libgfortran5 pkg-config texinfo doxygen make gfortran zlib libgcrypt libcurl zlib -y
 mamba install trung::libcheck -y
-source .bashrc
+source ~/.bashrc
 ```
 
 ### GMP
@@ -176,6 +176,7 @@ If you create a new environment, the LDFLAGS and CPPFLAGS should be something li
 ### Chealpix
 
 ```bash
+git clone https://github.com/fabienbaron/chealpix.git
 cd chealpix
 make shared CFITSIO_INCDIR=${INSTALLATION_FOLDER}/cfitsio/include CFITSIO_LIBDIR=${INSTALLATION_FOLDER}/cfitsio/lib
 mkdir ${INSTALLATION_FOLDER}/chealpix ${INSTALLATION_FOLDER}/chealpix/lib ${INSTALLATION_FOLDER}/chealpix/include
@@ -215,13 +216,16 @@ cd
 Export some paths:
 
 ```bash
+export LD_LIBRARY_PATH=${INSTALLATION_FOLDER}/mpsolve/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${INSTALLATION_FOLDER}/chealpix/lib:$LD_LIBRARY_PATH
 ```
 
 It will be convenient to export this file to `~/.bashrc` file:
 
-```
-export LD_LIBRARY_PATH=${INSTALLATION_FOLDER}/mpsolve/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=${INSTALLATION_FOLDER}/chealpix/lib:$LD_LIBRARY_PATH
+```bash
+echo 'export LD_LIBRARY_PATH=${INSTALLATION_FOLDER}/mpsolve/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=${INSTALLATION_FOLDER}/chealpix/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 And compile polyMV:
@@ -229,7 +233,7 @@ And compile polyMV:
  ```bash
 git clone https://github.com/oliveirara/polyMV.git -b polyMV_c
 cd polyMV/src
-gcc polymv.c -o polyMV -Wall -march=native -O3 -fopenmp -I${INSTALLATION_FOLDER}/cfitsio/include -L${INSTALLATION_FOLDER}/cfitsio/lib -lcfitsio -I${INSTALLATION_FOLDER}/gpm/include -L${INSTALLATION_FOLDER}/gpm/lib -lgmp -lgmpxx -I${INSTALLATION_FOLDER}/mpsolve/include -L${INSTALLATION_FOLDER}/mpsolve/lib -lmps -lm -I${INSTALLATION_FOLDER}/chealpix/include -L${INSTALLATION_FOLDER}/chealpix/lib -lchealpix -lstdc++ -ffast-math -I${INSTALLATION_FOLDER}/nlopt/include -L${INSTALLATION_FOLDER}/nlopt/lib -lnlopt -I${INSTALLATION_FOLDER}/hdf5/include -L${INSTALLATION_FOLDER}/hdf5/lib -lhdf5
+gcc polymv.c -o polyMV -Wall -march=native -O3 -fopenmp -I${INSTALLATION_FOLDER}/cfitsio/include -L${INSTALLATION_FOLDER}/cfitsio/lib -lcfitsio -I${INSTALLATION_FOLDER}/gmp/include -L${INSTALLATION_FOLDER}/gmp/lib -lgmp -lgmpxx -I${INSTALLATION_FOLDER}/mpsolve/include -L${INSTALLATION_FOLDER}/mpsolve/lib -lmps -lm -I${INSTALLATION_FOLDER}/chealpix/include -L${INSTALLATION_FOLDER}/chealpix/lib -lchealpix -lstdc++ -ffast-math -I${INSTALLATION_FOLDER}/nlopt/include -L${INSTALLATION_FOLDER}/nlopt/lib -lnlopt -I${INSTALLATION_FOLDER}/hdf5/include -L${INSTALLATION_FOLDER}/hdf5/lib -lhdf5
 ```
 
 And that's it! 🎉
