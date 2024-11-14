@@ -34,7 +34,7 @@ sudo make install
 ```bash
 git clone https://github.com/fabienbaron/chealpix.git
 cd chealpix/
-make CFITSIO_INCDIR=/usr/local/include CFITSIO_LIBDIR=/usr/local/lib
+make shared CFITSIO_INCDIR=/usr/local/include CFITSIO_LIBDIR=/usr/local/lib
 sudo make install LIBDIR=/usr/local/lib INCDIR=/usr/local/include RANLIB="ar -rsv"
 sudo ldconfig
 ```
