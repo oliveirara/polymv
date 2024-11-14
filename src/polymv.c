@@ -523,32 +523,44 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Open the file for reading
-    FILE *file = fopen(input_filename, "r");
-    if (!file) {
-        perror("Error opening file");
+    // Open the HDF5 file
+    hid_t file_id = H5Fopen(input_filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+    if (file_id < 0) {
+        fprintf(stderr, "Error opening file\n");
         free(al_real);
         free(al_imag);
         return 1;
     }
 
-    // Initialize and read values from the file
-    for (int j = 0; j < ALMS_NUMERO_LINHAS; j++) {
-        mpf_inits(al_real[j], al_imag[j], NULL);
-        if (gmp_fscanf(file, "%Ff %Ff\n", &al_real[j], &al_imag[j]) != 2) {
-            fprintf(stderr, "Error reading file\n");
-            fclose(file);
-            for (int k = 0; k <= j; k++) {
-                mpf_clears(al_real[k], al_imag[k], NULL);
-            }
-            free(al_real);
-            free(al_imag);
-            return 1;
-        }
+    // Open the datasets
+    hid_t real_dataset = H5Dopen(file_id, "real", H5P_DEFAULT);
+    hid_t imag_dataset = H5Dopen(file_id, "imag", H5P_DEFAULT);
+    if (real_dataset < 0 || imag_dataset < 0) {
+        fprintf(stderr, "Error opening datasets\n");
+        H5Fclose(file_id);
+        free(al_real);
+        free(al_imag);
+        return 1;
     }
 
-    // Close the file
-    fclose(file);
+    // Read the datasets
+    double real_data[ALMS_NUMERO_LINHAS];
+    double imag_data[ALMS_NUMERO_LINHAS];
+    H5Dread(real_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, real_data);
+    H5Dread(imag_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, imag_data);
+
+    // Initialize and assign values to the GMP variables
+    for (int j = 0; j < ALMS_NUMERO_LINHAS; j++) {
+        mpf_init(al_real[j]);
+        mpf_init(al_imag[j]);
+        mpf_set_d(al_real[j], real_data[j]);
+        mpf_set_d(al_imag[j], imag_data[j]);
+    }
+
+    // Close the datasets and file
+    H5Dclose(real_dataset);
+    H5Dclose(imag_dataset);
+    H5Fclose(file_id);
 
     // Perform calculations
     multipol_vec(al_real, al_imag, LMAX, output_filename);
