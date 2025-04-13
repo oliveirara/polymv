@@ -203,7 +203,7 @@ void multipol_vec(double *al_real, double *al_imag, double *coef_theta,
       // Store theta and phi values
       int k = 0;
       for (int j = 0; j < 2 * l; j++) {
-      k = (pow((l - 1), 2) + (l - 1) - 2) + j;
+      k = (((l - 1) * (l - 1)) + (l - 1) - 2) + j;
       coef_theta[k] = theta[j];
       coef_phi[k] = phi[j];
       }
