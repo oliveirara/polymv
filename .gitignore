@@ -1,3 +1,6 @@
+
+src/*.c
+
 # From https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
 
 ### Python ###
