@@ -3,9 +3,12 @@
 #include <string.h>
 #include <math.h>
 #include <complex.h>
+#include <float.h>
 #include <gmp.h>
 #include <mps/mps.h>
 #include <omp.h>
+
+// #define M_PI 3.14159265358979323846
 
 /*Function to calculate the Polynomial Coefficients*/
 void coefi_pol(int l, mpf_t al_real[], mpf_t al_imag[], mpf_t coef_real[],
@@ -139,6 +142,7 @@ void coord_pol(int l, double raiz_real[], double raiz_imag[], double *theta,
 
   // Define constants
   const int num_roots = 2 * l;
+  const double EPS = 1e-12;
 
   // Allocate arrays for magnitudes and complex numbers
   double R[num_roots];
@@ -148,8 +152,13 @@ void coord_pol(int l, double raiz_real[], double raiz_imag[], double *theta,
   for (int i = 0; i < num_roots; i++) {
     z[i] = raiz_real[i] + (raiz_imag[i] * I);
     R[i] = cabs(z[i]);
-    phi[i] = carg(z[i]);           // Phi domain is (0, 2*pi)
-    theta[i] = 2 * atan(1 / R[i]); // Theta domain is (0, pi)
+    phi[i] = carg(z[i]);              // Phi domain is (0, 2*pi)
+
+    if (R[i] < EPS) {
+      theta[i] = 0;                  // or M_PI
+    } else {
+      theta[i] = 2 * atan(1 / R[i]); // Theta domain is (0, pi)
+    }
   }
 }
 

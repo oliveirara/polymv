@@ -31,8 +31,12 @@ void guess(int ell, const double *x, const double *y, const double *z,
   const int npix =
       (12 * NSIDE * NSIDE) / 2; // Total number of pixels divided by 2
 
-  // Allocate arrays for pixel coordinates
-  double pixel_coords[npix][3];
+  // Use heap allocation for large arrays
+  double (*pixel_coords)[3] = malloc(sizeof(*pixel_coords) * npix);
+  if (pixel_coords == NULL) {
+    fprintf(stderr, "Memory allocation failed for pixel_coords\n");
+    return;
+  }
 
   // Initialize variables for the minimum psi and the guess coordinates
   double psi_min = 1.0e300;
@@ -56,7 +60,11 @@ void guess(int ell, const double *x, const double *y, const double *z,
       double dot_product = (pixel_coords[ipix][0] * x[pos_mv]) +
                            (pixel_coords[ipix][1] * y[pos_mv]) +
                            (pixel_coords[ipix][2] * z[pos_mv]);
-      double acos_val = acos(dot_product);
+
+      // Clamp to avoid domain error in acos
+      double dp_clamped = fmax(-1.0, fmin(1.0, dot_product));
+      double acos_val = acos(dp_clamped);
+
       sum_arccos_squared +=
           (acos_val * acos_val) + ((M_PI - acos_val) * (M_PI - acos_val));
     }
@@ -77,6 +85,8 @@ void guess(int ell, const double *x, const double *y, const double *z,
   // Store the result in the output array
   s[0] = theta_frechet[0];
   s[1] = phi_frechet[0];
+
+  free(pixel_coords);
 }
 
 double frechet_pol_min(unsigned n, const double *x, double *grad,
@@ -103,7 +113,8 @@ double frechet_pol_min(unsigned n, const double *x, double *grad,
   // Calculate Frechet mean
   for (int i = 0; i < twol; i++) {
     const double ab = (x_v * fd->x[i]) + (y_v * fd->y[i]) + (z_v * fd->z[i]);
-    const double acos_ab = acos(ab);
+    const double ab_clamped = fmax(-1.0, fmin(1.0, ab));
+    const double acos_ab = acos(ab_clamped);
     frechet_mean += acos_ab * acos_ab;
   }
 
@@ -121,8 +132,9 @@ double frechet_pol_min(unsigned n, const double *x, double *grad,
 
     for (int i = 0; i < twol; i++) {
       const double ab = (x_v * fd->x[i]) + (y_v * fd->y[i]) + (z_v * fd->z[i]);
-      const double acos_ab = acos(ab);
-      const double sqrt_1mab = sqrt(1.0 - ab * ab);
+      const double ab_clamped = fmax(-1.0, fmin(1.0, ab));
+      const double acos_ab = acos(ab_clamped);
+      const double sqrt_1mab = sqrt(1.0 - ab_clamped * ab_clamped);
 
       grad[0] -=
           2.0 * acos_ab *
