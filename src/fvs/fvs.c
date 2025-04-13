@@ -135,7 +135,10 @@ double frechet_pol_min(unsigned n, const double *x, double *grad,
       const double ab_clamped = fmax(-1.0, fmin(1.0, ab));
       const double acos_ab = acos(ab_clamped);
       const double sqrt_1mab = sqrt(1.0 - ab_clamped * ab_clamped);
-
++     if (fabs(ab_clamped) == 1.0) {
++       // Gradient is ill-defined here; handle carefully or skip
++       continue;
++     }
       grad[0] -=
           2.0 * acos_ab *
           (dxdtheta * fd->x[i] + dydtheta * fd->y[i] + dzdtheta * fd->z[i]) /
@@ -147,7 +150,6 @@ double frechet_pol_min(unsigned n, const double *x, double *grad,
 
   return frechet_mean;
 }
-
 void frechet_pol(int l, double *restrict theta, double *restrict phi,
                  double *frechet_vec_theta, double *frechet_vec_phi) {
   // Check for NULL pointers
