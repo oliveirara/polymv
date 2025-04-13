@@ -1,3 +1,4 @@
+from libc.stdlib cimport malloc, free
 cimport numpy as np
 import numpy as np
 
