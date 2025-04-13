@@ -252,7 +252,15 @@ void frechet_vec(double *coef_theta, double *coef_phi, double *frechet_theta,
     int lim_min = ((pow((l - 1), 2)) + (l - 1) - 2);
     int lim_max = ((pow(l, 2)) + l - 2);
 
-    double theta_each_l[2 * l], phi_each_l[2 * l];
+    double *theta_each_l = malloc(sizeof(double) * 2 * l);
+    double *phi_each_l = malloc(sizeof(double) * 2 * l);
+    if (theta_each_l == NULL || phi_each_l == NULL) {
+      // Handle allocation failure
+      free(theta_each_l);
+      free(phi_each_l);
+      continue;
+    }
+
     int n = 0;
 
     for (int pos = lim_min; pos < lim_max; pos++) {
@@ -264,9 +272,13 @@ void frechet_vec(double *coef_theta, double *coef_phi, double *frechet_theta,
 
     // Calculate the Frechet mean
     frechet_pol(l, theta_each_l, phi_each_l, &frechet_vec_theta,
-                &frechet_vec_phi);
+               &frechet_vec_phi);
 
     frechet_theta[l - 2] = frechet_vec_theta;
     frechet_phi[l - 2] = frechet_vec_phi;
+    
+    // Free allocated memory
+    free(theta_each_l);
+    free(phi_each_l);
   }
 }
