@@ -23,8 +23,8 @@ conda activate "${ENV_NAME}"
 
 # Core dependencies
 ${PKG_MANAGER} install \
-  autoconf automake bison cmake cython doxygen flex gcc gfortran gxx help2man \
-  libcurl libgcrypt libgfortran5 libtool m4 make pkg-config texinfo zlib -y
+  autoconf automake bison cfitsio cmake cython doxygen flex gcc gmp gfortran gxx help2man \
+  libcurl libgcrypt libgfortran5 libtool m4 make nlopt pkg-config texinfo zlib -y
 
 # Extra channel dependency (adjust as needed)
 ${PKG_MANAGER} install trung::libcheck -y

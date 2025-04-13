@@ -38,11 +38,8 @@ Make sure the following are installed on your system:
 
 2. Review the [Makefile](./Makefile)
    It will install the following user-level dependencies:
-   - GMP
    - MPSolve
-   - CFITSIO
    - chealpix
-   - NLOPT
 
 3. Customize the [config.mk](./config.mk)  
    Adjust these settings as needed:
