@@ -21,10 +21,12 @@
 Make sure the following are installed on your system:
 
 - Python ≥ 3.10
-- GCC and GFortran compilers
-- [Conda or Mamba](https://github.com/conda-forge/miniforge) package manager
+- GCC or another default Unix compiler
+- [Miniforge](https://github.com/conda-forge/miniforge) package manager
 
-> 🛑 **Note:** This package was developed for Unix-based systems. Windows support is not guaranteed.
+> 🛑 **Note:** This package was developed for Unix-based systems. Windows support is not guaranteed. \
+> \
+> The installation steps were designed to use `conda` due to the large amount of binaries available.
 
 ### Steps
 
@@ -35,7 +37,7 @@ Make sure the following are installed on your system:
    ```
 
 2. Review the [Makefile](./Makefile)
-   It will install the following system-level dependencies:
+   It will install the following user-level dependencies:
    - GMP
    - MPSolve
    - CFITSIO
@@ -44,7 +46,7 @@ Make sure the following are installed on your system:
 
 3. Customize the [config.mk](./config.mk)  
    Adjust these settings as needed:
-   - Installation directory (defaults to your home directory)
+   - Installation directory (defaults to user home directory)
    - Package manager (`mamba` by default, can be changed to `conda`)
    - Environment name
    - Python version
@@ -65,10 +67,25 @@ Explore the [notebooks](./notebooks/) folder for hands-on examples and demos. Th
 
 If you use `polymv` in your research, please cite:
 
-> R. A. Oliveira, T. S. Pereira, and M. Quartin,  
-> **CMB statistical isotropy confirmation at all scales using multipole vectors**,  
-> [Phys. Dark Univ. 30 (2020) 100608](https://doi.org/10.1016/j.dark.2020.100608)  
-> ([arXiv:1812.02654](https://arxiv.org/abs/1812.02654))
+```bibtex
+@article{2020PDU....3000608O,
+       author = {{Oliveira}, Renan A. and {Pereira}, Thiago S. and {Quartin}, Miguel},
+        title = "{CMB statistical isotropy confirmation at all scales using multipole vectors}",
+      journal = {Physics of the Dark Universe},
+     keywords = {Observational cosmology, Cosmic microwave background, Statistical isotropy, Multipole vectors, Astrophysics - Cosmology and Nongalactic Astrophysics, Astrophysics - Instrumentation and Methods for Astrophysics, General Relativity and Quantum Cosmology},
+         year = 2020,
+        month = dec,
+       volume = {30},
+          eid = {100608},
+        pages = {100608},
+          doi = {10.1016/j.dark.2020.100608},
+archivePrefix = {arXiv},
+       eprint = {1812.02654},
+ primaryClass = {astro-ph.CO},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2020PDU....3000608O},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
 
 ## 💰 Funding
 
