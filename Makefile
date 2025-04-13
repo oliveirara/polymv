@@ -1,7 +1,7 @@
 include config.mk
 SHELL := /usr/bin/bash
 
-all: create_env install_dependencies install_gmp install_mpsolve install_cfitsio install_chealpix install_nlopt install_polymv
+install: create_env install_dependencies install_gmp install_mpsolve install_cfitsio install_chealpix install_nlopt install_polymv
 
 create_env:
 	@bash scripts/create_env.sh ${PKG_MANAGER} ${PYTHON_ENV} ${PYTHON_VERSION}

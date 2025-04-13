@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 
-# Usage: ./install_polymv.sh <env_name> <installation_folder>
+# Usage: ./install_polymv.sh <env_name>
 ENV_NAME=$1
-INSTALLATION_FOLDER=$2
 
-if [ -z "$ENV_NAME" ] || [ -z "$INSTALLATION_FOLDER" ]; then
-  echo "❌ Usage: $0 <env_name> <installation_folder>"
+if [ -z "$ENV_NAME" ]; then
+  echo "❌ Usage: $0 <env_name>"
   exit 1
 fi
 
