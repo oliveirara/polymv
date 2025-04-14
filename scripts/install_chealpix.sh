@@ -21,7 +21,7 @@ git clone https://github.com/fabienbaron/chealpix.git
 cd chealpix
 
 # Configure and install chealpix to the specified directory
-make shared CFITSIO_INCDIR=${INSTALLATION_FOLDER}/include CFITSIO_LIBDIR=${INSTALLATION_FOLDER}/lib
+make shared CFITSIO_INCDIR=${CONDA_PREFIX}/include CFITSIO_LIBDIR=${CONDA_PREFIX}/lib
 make install LIBDIR=${INSTALLATION_FOLDER}/lib INCDIR=${INSTALLATION_FOLDER}/include RANLIB="ar -ts"
 cd ..
 rm -rf chealpix

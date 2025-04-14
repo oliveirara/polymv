@@ -1,4 +1,4 @@
-INSTALLATION_FOLDER ?= ${HOME}/.local/
+INSTALLATION_FOLDER ?= ${HOME}/.local
 PKG_MANAGER ?= mamba # conda
 PYTHON_ENV ?= polymv
 PYTHON_VERSION ?= 3.12
