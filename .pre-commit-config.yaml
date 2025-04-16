@@ -20,3 +20,10 @@ repos:
       # Run the formatter.
       - id: ruff-format
         types_or: [ python, pyi ]
+
+  # - repo: https://github.com/cpplint/cpplint
+  #   rev: 2.0.0
+  #   hooks:
+  #     - id: cpplint
+  #       args:
+  #         - --filter=-whitespace/line_length,-whitespace/parens
