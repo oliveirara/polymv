@@ -53,6 +53,11 @@ Make sure the following are installed on your system:
    make install
    ```
 
+   Or changing the parameters online (no need to rewrite the `config.mk` file). For the example, I will change the environment name and Python version:
+   ```bash
+   make install PYTHON_ENV="<environment-name>" PYTHON_VERSION="<custom-python-version>"
+   ```
+
 That’s it! 🎉  
 For more insight into what the installer is doing, check out the [scripts](./scripts/) folder.
 
