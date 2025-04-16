@@ -106,10 +106,3 @@ ignore = [
 
 [tool.ruff.format]
 preview = true
-
-[tool.deptry]
-ignore = [
-  # https://deptry.com/rules-violations/#unused-dependencies-dep002
-  "DEP002"
-]
-exclude = [".venv", "docs", "tests"]
