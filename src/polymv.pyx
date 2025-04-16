@@ -28,7 +28,7 @@ def mvs(np.ndarray[double, ndim=1] input1, np.ndarray[double, ndim=1] input2, in
     input2 = np.ascontiguousarray(input2, dtype=np.float64)
 
     cdef int tamanho_output = ((LMAX * (LMAX + 1)) - 2)
-    
+
     cdef np.ndarray[double, ndim=1] output1 = np.zeros(tamanho_output, dtype=np.float64)
     cdef np.ndarray[double, ndim=1] output2 = np.zeros(tamanho_output, dtype=np.float64)
 
@@ -53,8 +53,8 @@ def fvs(np.ndarray[double, ndim=1] input1, np.ndarray[double, ndim=1] input2, in
     input1 = np.ascontiguousarray(input1, dtype=np.float64)
     input2 = np.ascontiguousarray(input2, dtype=np.float64)
 
-    cdef int tamanho_output = LMAX - 2 
-    
+    cdef int tamanho_output = LMAX - 2
+
     cdef np.ndarray[double, ndim=1] output1 = np.zeros(tamanho_output, dtype=np.float64)
     cdef np.ndarray[double, ndim=1] output2 = np.zeros(tamanho_output, dtype=np.float64)
 

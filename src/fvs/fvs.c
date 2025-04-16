@@ -135,7 +135,7 @@ double frechet_pol_min(unsigned n, const double *x, double *grad,
       const double ab_clamped = fmax(-1.0, fmin(1.0, ab));
       const double acos_ab = acos(ab_clamped);
       const double sqrt_1mab = sqrt(1.0 - ab_clamped * ab_clamped);
-      
+
       if (fabs(ab_clamped) == 1.0) {
       // Gradient is ill-defined here; handle carefully or skip
         continue;
@@ -276,7 +276,7 @@ void frechet_vec(double *coef_theta, double *coef_phi, double *frechet_theta,
 
     frechet_theta[l - 2] = frechet_vec_theta;
     frechet_phi[l - 2] = frechet_vec_phi;
-    
+
     // Free allocated memory
     free(theta_each_l);
     free(phi_each_l);

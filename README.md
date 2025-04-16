@@ -41,7 +41,7 @@ Make sure the following are installed on your system:
    - MPSolve
    - chealpix
 
-3. Customize the [config.mk](./config.mk)  
+3. Customize the [config.mk](./config.mk)
    Adjust these settings as needed:
    - Installation directory (defaults to user home directory)
    - Package manager (`mamba` by default, can be changed to `conda`)
@@ -58,7 +58,7 @@ Make sure the following are installed on your system:
    make install PYTHON_ENV="<environment-name>" PYTHON_VERSION="<custom-python-version>"
    ```
 
-That’s it! 🎉  
+That’s it! 🎉
 For more insight into what the installer is doing, check out the [scripts](./scripts/) folder.
 
 ## 🧪 Usage
@@ -93,11 +93,11 @@ archivePrefix = {arXiv},
 
 This work was supported by:
 
-- Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq)  
-- Coordenação de Aperfeiçoamento de Pessoal de Nível Superior (CAPES)  
+- Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq)
+- Coordenação de Aperfeiçoamento de Pessoal de Nível Superior (CAPES)
 - Fundação Araucária (PBA-2016)
 
 ## 📄 License
 
-Licensed under the GNU General Public License v3.  
+Licensed under the GNU General Public License v3.
 See the [LICENSE](./LICENSE) file for details.
