@@ -1,6 +1,7 @@
 # polymv
 
-<a href="http://ascl.net/2007.009"><img src="https://img.shields.io/badge/ascl-2007.009-blue.svg?colorB=262255" alt="ascl:2007.009" /></a> [![GitHub license](https://img.shields.io/github/license/oliveirara/polymv)](https://github.com/oliveirara/polymv/blob/master/LICENSE)
+<a href="http://ascl.net/2007.009"><img src="https://img.shields.io/badge/ascl-2007.009-blue.svg?colorB=262255" alt="ascl:2007.009" /></a> [![GitHub license](https://img.shields.io/github/license/oliveirara/polymv)](https://github.com/oliveirara/polymv/blob/master/LICENSE) ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/oliveirara/polymv)
+
 
 `polymv` is a Python/C package for converting multipolar coefficients (`alms`) into **Multipole Vectors (MVs)** and **Fréchet Vectors (FVs)** for a given multipole. It's especially useful in cosmological studies, including the analysis of Planck 2015 and 2018 temperature maps.
 
