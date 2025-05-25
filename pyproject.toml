@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "polymv"
-version = "0.2.0"
+version = "2.0.0"
 description = "Obtain Multipole Vectors and Frechet Vectors from Sphere"
 license-files = ["LICENSE"]
 readme = "README.md"
@@ -106,3 +106,12 @@ ignore = [
 
 [tool.ruff.format]
 preview = true
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.14",
+    "mkdocs-open-in-new-tab>=1.0.8",
+    "mkdocstrings>=0.29.1",
+    "mkdocstrings-python>=1.16.11",
+]
