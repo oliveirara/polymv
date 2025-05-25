@@ -5,7 +5,7 @@ site_description: Python/C package that converts multipolar coefficients into Mu
 site_author: Renan Alves de Oliveira
 edit_uri: edit/main/docs/
 repo_name: oliveirara/polymv
-copyright: Maintained by Renan Alves de Oliveira.
+copyright: Maintained by Renan Alves de Oliveira and Ricardo Gonzatto Rodrigues.
 
 nav:
   - Home: index.md

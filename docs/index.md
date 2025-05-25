@@ -22,9 +22,9 @@ To get started with **polymv**, please refer to the following sections:
 - [Usage](./usage.md)
 * [Examples](./test-example.md)
 
-## Installation
+### Installation
 
-### Prerequisites
+#### Prerequisites
 
 Make sure the following are installed on your system:
 
@@ -36,7 +36,7 @@ Make sure the following are installed on your system:
 
 > The installation steps were designed to use `conda` due to the large amount of binaries available.
 
-### Steps
+#### Steps
 
 1. Clone the repository
    ```bash
@@ -71,6 +71,52 @@ For more insight into what the installer is doing, check out the [scripts](https
 ## License
 
 This project is licensed under the GNU General Public License v3. See the [LICENSE](LICENSE.md) file for details.
+
+## Citation
+
+If you use `polymv` in your research, please cite:
+
+```bibtex
+@article{2020PDU....3000608O,
+       author = {{Oliveira}, Renan A. and {Pereira}, Thiago S. and {Quartin}, Miguel},
+        title = "{CMB statistical isotropy confirmation at all scales using multipole vectors}",
+      journal = {Physics of the Dark Universe},
+     keywords = {Observational cosmology, Cosmic microwave background, Statistical isotropy, Multipole vectors, Astrophysics - Cosmology and Nongalactic Astrophysics, Astrophysics - Instrumentation and Methods for Astrophysics, General Relativity and Quantum Cosmology},
+         year = 2020,
+        month = dec,
+       volume = {30},
+          eid = {100608},
+        pages = {100608},
+          doi = {10.1016/j.dark.2020.100608},
+archivePrefix = {arXiv},
+       eprint = {1812.02654},
+ primaryClass = {astro-ph.CO},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2020PDU....3000608O},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
+
+and
+
+```bibtex
+@article{2024arXiv241108087R,
+       author = {{Rodrigues}, Ricardo G. and {Pereira}, Thiago S. and {Quartin}, Miguel},
+        title = "{Fr{\'e}chet Vectors as sensitive tools for blind tests of CMB anomalies}",
+      journal = {arXiv e-prints},
+     keywords = {Astrophysics - Cosmology and Nongalactic Astrophysics, General Relativity and Quantum Cosmology},
+         year = 2024,
+        month = nov,
+          eid = {arXiv:2411.08087},
+        pages = {arXiv:2411.08087},
+          doi = {10.48550/arXiv.2411.08087},
+archivePrefix = {arXiv},
+       eprint = {2411.08087},
+ primaryClass = {astro-ph.CO},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024arXiv241108087R},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+```
 
 ## Acknowledgments
 
