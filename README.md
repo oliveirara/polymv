@@ -90,6 +90,28 @@ archivePrefix = {arXiv},
 }
 ```
 
+and
+
+```bibtex
+@article{2024arXiv241108087R,
+       author = {{Rodrigues}, Ricardo G. and {Pereira}, Thiago S. and {Quartin}, Miguel},
+        title = "{Fr{\'e}chet Vectors as sensitive tools for blind tests of CMB anomalies}",
+      journal = {arXiv e-prints},
+     keywords = {Astrophysics - Cosmology and Nongalactic Astrophysics, General Relativity and Quantum Cosmology},
+         year = 2024,
+        month = nov,
+          eid = {arXiv:2411.08087},
+        pages = {arXiv:2411.08087},
+          doi = {10.48550/arXiv.2411.08087},
+archivePrefix = {arXiv},
+       eprint = {2411.08087},
+ primaryClass = {astro-ph.CO},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024arXiv241108087R},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+```
+
 ## 💰 Funding
 
 This work was supported by:
