@@ -1,32 +1,69 @@
-from setuptools import setup
-from setuptools import find_packages
+import os
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+import numpy as np
+from setuptools import Extension, setup
+
+home_dir = os.getenv("HOME", "")
 
 setup(
-    name="polyMV",
-    version="0.1",
-    author="Renan Alves de Oliveira",
-    author_email="oliveirara@uel.br",
-    description="Obtain Multipole Vectors and Frechet Vectors.",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/oliveirara/polyMV",
-    project_urls={
-        "MPSolve": "https://github.com/robol/MPSolve",
-        "Planck Legacy Archive": "https://pla.esac.esa.int/",
-    },
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Operating System :: OS Independent",
+    name="polymv",
+    ext_modules=[
+        Extension(
+            "polymv.polymv",
+            sources=[
+                "src/polymv.pyx",
+                "src/mvs/mvs.c",
+                "src/fvs/fvs.c",
+            ],
+            libraries=[
+                "gmp",
+                "mps",
+                "m",
+                "cfitsio",
+                "chealpix",
+                "nlopt",
+                "gomp",
+            ],
+            library_dirs=[
+                os.path.join(home_dir, ".local", "lib"),
+                os.path.join(home_dir, ".local", "lib64"),
+            ],
+            include_dirs=[
+                np.get_include(),
+                os.path.join(home_dir, ".local", "include"),
+            ],
+            extra_compile_args=[
+                "-std=c99",
+                "-fopenmp",
+                "-fPIC",
+                "-march=native",
+                "-ffast-math",
+                "-mfpmath=sse",
+                "-D_GNU_SOURCE",
+                "-g",
+                "-Wall",
+                "-O3",
+                "-flto",
+                "-funroll-loops",
+            ],
+            extra_link_args=[
+                "-lgmp",
+                "-lgmpxx",
+                "-lmps",
+                "-lm",
+                "-lcfitsio",
+                "-lchealpix",
+                "-lstdc++",
+                "-lnlopt",
+            ],
+            define_macros=[
+                ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION"),
+            ],
+        ),
+        Extension(
+            "polymv.utils",
+            sources=["src/utils.pyx"],
+            include_dirs=[np.get_include()],
+        ),
     ],
-    python_requires=">=3.6",
-    install_requires=["gmpy2", "healpy", "iteration_utilities", "numpy", "numba",],
-    py_modules=["polymv", "mpsolve"],
-    package_dir={"": "src"},
-    keywords="multipole-vectors frechet-vectors cosmology cosmic-microwave-background",
-    license="GPLv3"
 )
