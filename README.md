@@ -116,9 +116,10 @@ archivePrefix = {arXiv},
 
 This work was supported by:
 
+- Fundação de Amparo à Pesquisa do Estado do Rio de Janeiro (grant E26/204.633/2024)
+- Fundação Araucária (NAPI de Fenômenos Extremos do Universo, grant 347/2024 PD&I)
 - Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq)
 - Coordenação de Aperfeiçoamento de Pessoal de Nível Superior (CAPES)
-- Fundação Araucária (PBA-2016)
 
 ## 📄 License
 
