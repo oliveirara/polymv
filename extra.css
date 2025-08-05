@@ -1,0 +1,7 @@
+:root {
+  --md-primary-fg-color: #dc143c; /* Crimson */
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #000 !important;
+}
