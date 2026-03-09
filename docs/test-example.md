@@ -152,7 +152,7 @@ theta: [0.61105855 1.18990493 1.3201296  1.56128225 0.35433486]
 phi:   [4.30053475 2.58923118 4.61933201 6.0707641  0.62762944]
 ```
 
-## Compute Single Fréchet Vector 
+## Compute Single Fréchet Vector
 ```python
 %%time
 fvs_single = polymv.frechet_single(fvs[0], fvs[1])
