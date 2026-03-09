@@ -14,6 +14,7 @@ setup(
                 "src/polymv.pyx",
                 "src/mvs/mvs.c",
                 "src/fvs/fvs.c",
+                "src/fvs_single/fvs_single.c",
             ],
             libraries=[
                 "gmp",

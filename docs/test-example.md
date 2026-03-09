@@ -151,3 +151,17 @@ print("phi:", fvs[1][:5])
 theta: [0.61105855 1.18990493 1.3201296  1.56128225 0.35433486]
 phi:   [4.30053475 2.58923118 4.61933201 6.0707641  0.62762944]
 ```
+
+## Compute Single Fréchet Vector 
+```python
+%%time
+fvs_single = polymv.frechet_single(fvs[0], fvs[1])
+print("(Theta Phi) ", fvs_single)
+```
+
+**Output:**
+```
+CPU times: user 102 ms, sys: 1.99 ms, total: 104 ms
+Wall time: 103 ms
+(Theta Phi) (0.029493158924209985, 2.4531159345735434)
+```
