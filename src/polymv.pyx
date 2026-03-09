@@ -64,7 +64,7 @@ def fvs(np.ndarray[double, ndim=1] input1, np.ndarray[double, ndim=1] input2, in
     frechet_vec(&input1[0], &input2[0], &output1[0], &output2[0], LMAX)
 
     return output1, output2
-""" test function """
+
 
 
 def frechet_single(np.ndarray[double, ndim=1] theta, np.ndarray[double, ndim=1] phi):

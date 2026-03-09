@@ -163,6 +163,8 @@ double frechet_pol_min_single(unsigned dim, const double *x, double *grad,
  */
 void fvs_single(double *theta, double *phi, int n_vecs, double *out_theta, double *out_phi) {
                     // Check for NULL pointers and valid n_vecs
+    *out_theta = NAN;
+    *out_phi = NAN;
     if (theta == NULL || phi == NULL || out_theta == NULL || out_phi == NULL) {
         return;
     }
