@@ -54,9 +54,14 @@ FUNCTIONS
 
         Returns:
             array: An array for all multipole vectors in spherical coordinates (theta, phi in radians) from l=2 to lmax.
+    frechet_single(input1, input2)
+        Compute a single Fréchet vector for an arbitrary set of polar unit vectors.
+    Parameters:
+        input1 (float): polar angles in radians
+        input2 (float):   azimuthal angles in radians
+    Returns:
+        (out_theta, out_phi): scalar floats of a single Fréchet Vector
 
-DATA
-    __test__ = {}
 
 FILE
     /home/renan/polymv-project/polymv/polymv/polymv.cpython-312-x86_64-linux-gnu.so

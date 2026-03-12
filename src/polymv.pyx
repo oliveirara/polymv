@@ -78,8 +78,14 @@ def frechet_single(np.ndarray[double, ndim=1] theta, np.ndarray[double, ndim=1] 
     """
     theta = np.ascontiguousarray(theta, dtype=np.float64)
     phi   = np.ascontiguousarray(phi,   dtype=np.float64)
+    if theta.shape[0] != phi.shape[0]:
+        raise ValueError("theta and phi must have the same length")
+    if theta.shape[0] == 0:
+        raise ValueError("theta and phi must be non-empty")
     cdef int n_vecs = theta.shape[0]
     cdef double out_theta = 0.0
     cdef double out_phi   = 0.0
     fvs_single(&theta[0], &phi[0], n_vecs, &out_theta, &out_phi)
+    if not np.isfinite(out_theta) or not np.isfinite(out_phi):
+        raise RuntimeError("frechet_single failed")
     return out_theta, out_phi

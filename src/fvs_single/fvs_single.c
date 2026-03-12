@@ -11,6 +11,9 @@
 #define NSIDE 64
 #define ACOS(ab) acos(((ab) > 1.0) ? 1.0 : (((ab) < -1.0) ? -1.0 : (ab)))
 
+//This function might be overdesigned, I was trying to fix a problem where the code would instalock on the poles, but I think it might be fine now. I'm leaving it as is for now, but we can come back and simplify if we want to.
+// The solution for the instalocking seems to be adding the antipodes BEFORE running this function, which is a negative side of having a generic function, it cannot predict if the input is all in the north pole
+
 typedef struct _SingleData {
   int n;
   double *restrict x;
@@ -26,13 +29,13 @@ void guess_single(int ell, const double *x, const double *y, const double *z,
   if (x == NULL || y == NULL || z == NULL || s == NULL) {
     return;
   }
-
+  // We'll do 2 passes just like the original python code did, this is to avoid having the code instalock on the poles
   // Define constants
-  const int npix =
-      (12 * NSIDE * NSIDE) / 2; // Total number of pixels divided by 2
+  const int npix_coarse =
+      (12 * NSIDE * NSIDE ) ; // Full sky search with NSIDE=64, no antipode pairing, so we use all pixels
 
   // Use heap allocation for large arrays
-  double (*pixel_coords)[3] = malloc(sizeof(*pixel_coords) * npix);
+  double (*pixel_coords)[3] = malloc(sizeof(*pixel_coords) * npix_coarse);
   if (pixel_coords == NULL) {
     fprintf(stderr, "Memory allocation failed for pixel_coords\n");
     return;
@@ -43,7 +46,7 @@ void guess_single(int ell, const double *x, const double *y, const double *z,
   double guess[3];
 
   // Calculate pixel coordinates
-  for (int ipix = 0; ipix < npix; ipix++) {
+  for (int ipix = 0; ipix < npix_coarse; ipix++) {
     double vec[3];
     pix2vec_ring(NSIDE, ipix, vec);
     pixel_coords[ipix][0] = vec[0];
@@ -52,14 +55,14 @@ void guess_single(int ell, const double *x, const double *y, const double *z,
   }
 
   // Iterate over each pixel to find the minimum psi
-  for (int ipix = 0; ipix < npix; ipix++) {
+  for (int ipix = 0; ipix < npix_coarse; ipix++) {
     double sum_arccos_squared = 0.0;
 
     // Calculate the sum of squared arccosines
-    for (int pos_mv = 0; pos_mv < ell; pos_mv++) {
-      double dot_product = (pixel_coords[ipix][0] * x[pos_mv]) +
-                           (pixel_coords[ipix][1] * y[pos_mv]) +
-                           (pixel_coords[ipix][2] * z[pos_mv]);
+    for (int j = 0; j < ell; j++) {
+      double dot_product = (pixel_coords[ipix][0] * x[j]) +
+                           (pixel_coords[ipix][1] * y[j]) +
+                           (pixel_coords[ipix][2] * z[j]);
 
       // Clamp to avoid domain error in acos
       double dp_clamped = fmax(-1.0, fmin(1.0, dot_product));
@@ -76,7 +79,32 @@ void guess_single(int ell, const double *x, const double *y, const double *z,
       guess[2] = pixel_coords[ipix][2];
     }
   }
+  // Second pass, finer grain search around the first guess
+  const long NSIDE_FINE = 1024;
+  const long npix_fine = 12 * NSIDE_FINE * NSIDE_FINE ; // Full sky search with NSIDE=1024, no antipode pairing, so we use all pixels
+  const double search_radius = cos(2 * M_PI / 180.0); // 2 degree search radius
+  psi_min = 1.0e300; // reset psi_min for the finer search
+  for (long ipix = 0; ipix < npix_fine; ipix++) {
+    double vec[3];
+    pix2vec_ring(NSIDE_FINE, ipix, vec);
 
+    // Check if the pixel is within the search radius of the coarse guess
+    double dot_product = (vec[0] * guess[0]) + (vec[1] * guess[1]) + (vec[2] * guess[2]);
+    if (dot_product > search_radius) {
+      double sum_arccos_squared = 0.0;
+      for (int j = 0; j < ell; j++) {
+        double dp_clamped = fmax(-1.0, fmin(1.0, (vec[0] * x[j]) + (vec[1] * y[j]) + (vec[2] * z[j])));
+        double acos_val = acos(dp_clamped);
+        sum_arccos_squared += (acos_val * acos_val);
+      }
+      if (sum_arccos_squared < psi_min) {
+        psi_min = sum_arccos_squared;
+        guess[0] = vec[0];
+        guess[1] = vec[1];
+        guess[2] = vec[2];
+      }
+    }
+  }
   // Convert the guess coordinates to spherical coordinates
   double theta_frechet[1], phi_frechet[1];
   vec2ang(guess, theta_frechet, phi_frechet);
@@ -85,7 +113,7 @@ void guess_single(int ell, const double *x, const double *y, const double *z,
   s[0] = theta_frechet[0];
   s[1] = phi_frechet[0];
 
-  free(pixel_coords);
+  free(pixel_coords); // I'm leaving this at the end of the whole function in case we come back and change the second iteration to include this variable. If we do so, this will free the memory anyways.
 }
 
 
@@ -93,7 +121,7 @@ double frechet_pol_min_single(unsigned dim, const double *x, double *grad,
                        void *data) {
   // Check for NULL pointers
   if (x == NULL || data == NULL) {
-    return -1.0; // Return an error value
+    return HUGE_VAL; // Return an error value
   }
 
   SingleData *sd = (SingleData *)data;
@@ -162,68 +190,95 @@ double frechet_pol_min_single(unsigned dim, const double *x, double *grad,
  *   out_phi   - output azimuthal angle of the Fréchet mean
  */
 void fvs_single(double *theta, double *phi, int n_vecs, double *out_theta, double *out_phi) {
-                    // Check for NULL pointers and valid n_vecs
-    *out_theta = NAN;
-    *out_phi = NAN;
-    if (theta == NULL || phi == NULL || out_theta == NULL || out_phi == NULL) {
-        return;
-    }
-    if (n_vecs <= 0) {
-        fprintf(stderr, "fvs_single: n_vecs must be positive (got %d)\n", n_vecs);
-        return;
-    }
 
-    /* Convert to Cartesian */
-    double *x = malloc(sizeof(double) * n_vecs);
-    double *y = malloc(sizeof(double) * n_vecs);
-    double *z = malloc(sizeof(double) * n_vecs);
-    double f;
+  if (theta == NULL || phi == NULL || out_theta == NULL || out_phi == NULL) {
+    return;
+  }
+  *out_theta = NAN;
+  *out_phi = NAN;
+  if (n_vecs <= 0) {
+    fprintf(stderr, "fvs_single: n_vecs must be positive (got %d)\n", n_vecs);
+    return;
+  }
 
-    if (x == NULL || y == NULL || z == NULL) {
-        free(x); free(y); free(z);
-        fprintf(stderr, "fvs_single: memory allocation failed\n");
-        return;
-    }
-    for (int i = 0; i < n_vecs; i++) {
-        x[i] = sin(theta[i]) * cos(phi[i]);
-        y[i] = sin(theta[i]) * sin(phi[i]);
-        z[i] = cos(theta[i]);
-    }
-
-    SingleData sd = {n_vecs, x, y, z};
-
-    double s[2] = {0.0, 0.0};
-    double lb[2] = {0, 0};
-    double ub[2] = {M_PI, 2.0 * M_PI };
-    double min_f = 1.0e300;
-
-    nlopt_opt opt = nlopt_create(NLOPT_LN_NELDERMEAD, 2);
-
-    nlopt_set_lower_bounds(opt, lb);
-    nlopt_set_upper_bounds(opt, ub);
-    nlopt_set_min_objective(opt, frechet_pol_min_single, &sd);
-    nlopt_set_xtol_rel(opt, 1.0e-7);
-
-    guess_single(n_vecs, x, y, z, s);
-
-    if (nlopt_optimize(opt, s, &f) < 0) {
-        fprintf(stderr, "fvs_single: nlopt failed\n");
-    } else {
-        if (f < min_f) {
-            min_f = f;
-            *out_theta = s[0];
-            *out_phi   = s[1];
-        }
-    }
-    if (*out_theta > (M_PI / 2)) {
-        *out_theta = M_PI - *out_theta;
-        *out_phi   = M_PI + *out_phi;
-
-        if (*out_phi > (2.0 * M_PI)) {
-            *out_phi -= (2.0 * M_PI);
-        }
-    }
-
-    nlopt_destroy(opt);
+  double *x = malloc(sizeof(double) * n_vecs);
+  double *y = malloc(sizeof(double) * n_vecs);
+  double *z = malloc(sizeof(double) * n_vecs);
+  if (x == NULL || y == NULL || z == NULL) {
     free(x); free(y); free(z);
+    fprintf(stderr, "fvs_single: memory allocation failed\n");
+    return;
+  }
+  for (int i = 0; i < n_vecs; i++) {
+    x[i] = sin(theta[i]) * cos(phi[i]);
+    y[i] = sin(theta[i]) * sin(phi[i]);
+    z[i] = cos(theta[i]);
+  }
+
+  SingleData sd = {n_vecs, x, y, z};
+
+  double s[2] = {0.0, 0.0};  // will be overwritten by guess_single
+  double lb[2] = {0.0, 0.0};
+  double ub[2] = {M_PI, 2.0 * M_PI};
+  double f;
+
+  // STEP 1: get initial guess from pixel scan (must happen first)
+  guess_single(n_vecs, x, y, z, s);
+  // fprintf(stderr, "DEBUG guess: theta=%.4f (%.1f°) phi=%.4f (%.1f°)\n", s[0], s[0]*180/M_PI, s[1], s[1]*180/M_PI);
+
+  // STEP 2: coarse Nelder-Mead from the guess
+  nlopt_opt opt1 = nlopt_create(NLOPT_LN_NELDERMEAD, 2);
+  if (opt1 == NULL ||
+    nlopt_set_lower_bounds(opt1, lb) < 0 ||
+    nlopt_set_upper_bounds(opt1, ub) < 0 ||
+    nlopt_set_min_objective(opt1, frechet_pol_min_single, &sd) < 0 ||
+    nlopt_set_xtol_rel(opt1, 1e-4) < 0 ||
+    nlopt_optimize(opt1, s, &f) < 0) {
+    if (opt1 != NULL) {
+      nlopt_destroy(opt1);
+    }
+    fprintf(stderr, "fvs_single: coarse optimization failed\n");
+    free(x); free(y); free(z);
+    return;
+  }
+  nlopt_destroy(opt1);
+
+  // Try guess and its antipode, keep the better result
+  double s_antipode[2] = {
+    M_PI - s[0],                                    // flip theta
+    s[1] > M_PI ? s[1] - M_PI : s[1] + M_PI        // flip phi
+  };
+
+  double f1 = 1e300, f2 = 1e300;
+  double s1[2] = {s[0], s[1]};
+  double s2[2] = {s_antipode[0], s_antipode[1]};
+
+  // Optimize from original guess
+  nlopt_opt opt2a = nlopt_create(NLOPT_LD_LBFGS, 2);
+  nlopt_set_lower_bounds(opt2a, lb);
+  nlopt_set_upper_bounds(opt2a, ub);
+  nlopt_set_min_objective(opt2a, frechet_pol_min_single, &sd);
+  nlopt_set_xtol_rel(opt2a, 1e-7);
+  nlopt_optimize(opt2a, s1, &f1);
+  nlopt_destroy(opt2a);
+
+  // Optimize from antipodal guess
+  nlopt_opt opt2b = nlopt_create(NLOPT_LD_LBFGS, 2);
+  nlopt_set_lower_bounds(opt2b, lb);
+  nlopt_set_upper_bounds(opt2b, ub);
+  nlopt_set_min_objective(opt2b, frechet_pol_min_single, &sd);
+  nlopt_set_xtol_rel(opt2b, 1e-7);
+  nlopt_optimize(opt2b, s2, &f2);
+  nlopt_destroy(opt2b);
+
+  // Pick the better result
+  if (f1 <= f2) {
+    *out_theta = s1[0];
+    *out_phi   = s1[1];
+  } else {
+    *out_theta = s2[0];
+    *out_phi   = s2[1];
+  }
+
+  free(x); free(y); free(z);
 }
