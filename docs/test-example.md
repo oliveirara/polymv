@@ -54,13 +54,13 @@ FUNCTIONS
 
         Returns:
             array: An array for all multipole vectors in spherical coordinates (theta, phi in radians) from l=2 to lmax.
-    frechet_single(input1, input2)
+    frechet_single(theta, phi)
         Compute a single Fréchet vector for an arbitrary set of polar unit vectors.
-    Parameters:
-        input1 (float): polar angles in radians
-        input2 (float):   azimuthal angles in radians
-    Returns:
-        (out_theta, out_phi): scalar floats of a single Fréchet Vector
+        Parameters:
+            theta: polar angles in radians
+            phi:   azimuthal angles in radians
+        Returns:
+            (out_theta, out_phi): scalar floats of a single Fréchet Vector
 
 
 FILE
