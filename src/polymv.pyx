@@ -10,6 +10,9 @@ cdef extern from "mvs/mvs.h":
 cdef extern from "fvs/fvs.h":
     void frechet_vec(double* input1, double* input2, double* output1, double* output2, int LMAX)
 
+cdef extern from "fvs_single/fvs_single.h":
+    void fvs_single(double* theta, double* phi, int n_vecs, double* out_theta, double* out_phi)
+
 
 def mvs(np.ndarray[double, ndim=1] input1, np.ndarray[double, ndim=1] input2, int LMAX):
     """
@@ -61,3 +64,28 @@ def fvs(np.ndarray[double, ndim=1] input1, np.ndarray[double, ndim=1] input2, in
     frechet_vec(&input1[0], &input2[0], &output1[0], &output2[0], LMAX)
 
     return output1, output2
+
+
+
+def frechet_single(np.ndarray[double, ndim=1] theta, np.ndarray[double, ndim=1] phi):
+    """
+    Compute a single Fréchet vector for an arbitrary set of polar unit vectors.
+    Parameters:
+        theta: polar angles in radians
+        phi:   azimuthal angles in radians
+    Returns:
+        (out_theta, out_phi): scalar floats
+    """
+    theta = np.ascontiguousarray(theta, dtype=np.float64)
+    phi   = np.ascontiguousarray(phi,   dtype=np.float64)
+    if theta.shape[0] != phi.shape[0]:
+        raise ValueError("theta and phi must have the same length")
+    if theta.shape[0] == 0:
+        raise ValueError("theta and phi must be non-empty")
+    cdef int n_vecs = theta.shape[0]
+    cdef double out_theta = 0.0
+    cdef double out_phi   = 0.0
+    fvs_single(&theta[0], &phi[0], n_vecs, &out_theta, &out_phi)
+    if not np.isfinite(out_theta) or not np.isfinite(out_phi):
+        raise RuntimeError("frechet_single failed")
+    return out_theta, out_phi
